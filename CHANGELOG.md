@@ -1,9 +1,10 @@
 Change Log
 ==========
 
-v2.9.0 (2026.03.xx)
+v3.0.0 (2026.03.11)
 -------------------
 
+- Fix blocking system apps
 - compileSdkVersion 35 -> 36
 - Update library
     - BuildTools 35.0.0 -> 36.0.0
