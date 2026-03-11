@@ -8,7 +8,7 @@ v2.9.0 (2026.03.xx)
 - Update library
     - BuildTools 35.0.0 -> 36.0.0
     - Gradle 8.14 -> 9.4.0
-    - AGP 8.9.2 -> 8.13.2
+    - AGP 8.9.2 -> 9.0.1
     - Kotlin 2.1.20 -> 2.3.10
     - AndroidX Core 1.16.0 -> 1.17.0
     - AppCompat 1.7.0 -> 1.7.1
