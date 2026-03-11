@@ -92,13 +92,15 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
   fun setTraffic(tx: Long, pTx: Int, rx: Long, pRx: Int) {
 
-    mTrafficList.add(Traffic(System.currentTimeMillis(), tx, pTx, rx, pRx))
+    synchronized(mTrafficList) {
+      mTrafficList.add(Traffic(System.currentTimeMillis(), tx, pTx, rx, pRx))
 
-    // 過去データ削除
-    if (mTrafficList.size > TRAFFIC_LIST_COUNT_MAX) {
-      val n = mTrafficList.size - TRAFFIC_LIST_COUNT_MAX
-      for (i in 0 until n) {
-        mTrafficList.removeFirst()
+      // 過去データ削除
+      if (mTrafficList.size > TRAFFIC_LIST_COUNT_MAX) {
+        val n = mTrafficList.size - TRAFFIC_LIST_COUNT_MAX
+        for (i in 0 until n) {
+          mTrafficList.removeFirst()
+        }
       }
     }
 
@@ -145,11 +147,13 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
   private fun myDrawFrame(now: Long) {
 
-    if (mTrafficList.size <= 0) {
-      return
+    val t: Traffic
+    synchronized(mTrafficList) {
+      if (mTrafficList.size <= 0) {
+        return
+      }
+      t = mTrafficList.last
     }
-
-    val t = mTrafficList.last
     val tx = t.tx
     val rx = t.rx
 
@@ -354,14 +358,20 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
     val currentP = if (getTx) t.pTx else t.pRx
 
-    val n = mTrafficList.size - 1
+    // スナップショットを取得してスレッド安全にアクセスする
+    val snapshot: List<Traffic>
+    synchronized(mTrafficList) {
+      snapshot = ArrayList(mTrafficList)
+    }
+
+    val n = snapshot.size - 1
     if (n < 2) {
       return currentP
     } else {
 
       // 最後の2つ分の差分時間を補間に使う
-      val lastIntervalTime = mTrafficList[n].time - mTrafficList[n - 1].time
-      val elapsed = now - mTrafficList[n].time
+      val lastIntervalTime = snapshot[n].time - snapshot[n - 1].time
+      val elapsed = now - snapshot[n].time
       if (elapsed > lastIntervalTime * 3) {
         // 十分時間が経過しているので収束させる
         return currentP
@@ -371,7 +381,7 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
         val x = DoubleArray(n + 1)
         val y = DoubleArray(n + 1)
         for (i in 0 until n + 1) {
-          val t1 = mTrafficList[i]
+          val t1 = snapshot[i]
           x[i] = t1.time.toDouble()
           y[i] = (if (getTx) t1.pTx else t1.pRx).toDouble()
         }
