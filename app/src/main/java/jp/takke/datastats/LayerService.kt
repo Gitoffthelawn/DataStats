@@ -297,7 +297,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     // API 30 で FLAG_LAYOUT_INSET_DECOR が deprecated だがこれを外すと Y 座標がツールバーの下くらいになってしまう
     val params = WindowManager.LayoutParams(
       WindowManager.LayoutParams.MATCH_PARENT,
-      WindowManager.LayoutParams.MATCH_PARENT,
+      WindowManager.LayoutParams.WRAP_CONTENT,
       myLayerType,
       WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
               or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
