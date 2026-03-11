@@ -1,5 +1,4 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
 
 android {
     compileSdk rootProject.ext.compileSdkVersion as Integer
@@ -35,7 +34,7 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.myConfig
         }
         debug {
@@ -112,9 +111,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
     buildFeatures {
         aidl true
         buildConfig true
@@ -129,8 +125,6 @@ dependencies {
     implementation libs.androidx.appcompat
     implementation libs.androidx.core.ktx
     implementation libs.androidx.preference.ktx
-
-    implementation libs.kotlin.stdlib.jdk7
 }
 
 // load signing settings from gradle.properties
