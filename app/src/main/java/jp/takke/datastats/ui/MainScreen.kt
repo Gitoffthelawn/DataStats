@@ -63,6 +63,12 @@ data class ConfigUiState(
   val debugMode: Boolean = false,
   val previewLabel: String = "-",
   val previewSlider: Int = 0,
+  /** プレビュー領域を実トラフィックのライブ表示にするか(false = 従来のスライダー/サンプル注入) */
+  val previewLiveMode: Boolean = true,
+  /** ライブ表示中のアップロード速度 [B/s] */
+  val previewLiveTxBps: Long = 0,
+  /** ライブ表示中のダウンロード速度 [B/s] */
+  val previewLiveRxBps: Long = 0,
 )
 
 /**
@@ -81,6 +87,7 @@ data class MainScreenCallbacks(
   val onUnitTypeChange: (Boolean) -> Unit = {},
   val onPreviewSliderChange: (Int) -> Unit = {},
   val onSampleClick: (Int) -> Unit = {},
+  val onPreviewLiveModeChange: (Boolean) -> Unit = {},
   val onStart: () -> Unit = {},
   val onStop: () -> Unit = {},
   val onRestart: () -> Unit = {},
@@ -308,48 +315,105 @@ private fun StartupSection(state: ConfigUiState, callbacks: MainScreenCallbacks)
 @Composable
 private fun PreviewSection(state: ConfigUiState, callbacks: MainScreenCallbacks) {
   SectionCard(title = stringResource(R.string.preview)) {
-    Text(
-      stringResource(R.string.preview_hint),
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    // ライブ表示 / 注入モードの切替トグル
+    SwitchRow(
+      title = stringResource(R.string.preview_live_mode),
+      description = stringResource(R.string.preview_live_mode_desc),
+      checked = state.previewLiveMode,
+      onCheckedChange = callbacks.onPreviewLiveModeChange,
     )
-    Spacer(Modifier.height(12.dp))
+    RowDivider()
 
-    // Sample buttons
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-      SAMPLE_KB.forEach { kb ->
-        FilledTonalButton(
-          onClick = { callbacks.onSampleClick(kb) },
-          modifier = Modifier.weight(1f),
-        ) {
-          Text("${kb}KB")
-        }
-      }
-    }
-    Spacer(Modifier.height(8.dp))
-
-    // Slider + preview label
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      Slider(
-        value = state.previewSlider.toFloat(),
-        onValueChange = { callbacks.onPreviewSliderChange(it.toInt()) },
-        valueRange = 0f..1200f,
-        modifier = Modifier.weight(1f),
-      )
-      Spacer(Modifier.width(8.dp))
-      Text(
-        state.previewLabel,
-        modifier = Modifier.width(72.dp),
-        textAlign = TextAlign.End,
-      )
+    if (state.previewLiveMode) {
+      LivePreviewContent(state)
+    } else {
+      InjectPreviewContent(state, callbacks)
     }
   }
+}
+
+@Composable
+private fun LivePreviewContent(state: ConfigUiState) {
+  Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.SpaceEvenly,
+  ) {
+    LiveTrafficItem(
+      label = stringResource(R.string.preview_live_upload),
+      valueText = formatBytesPerSec(state.previewLiveTxBps),
+    )
+    LiveTrafficItem(
+      label = stringResource(R.string.preview_live_download),
+      valueText = formatBytesPerSec(state.previewLiveRxBps),
+    )
+  }
+}
+
+@Composable
+private fun LiveTrafficItem(label: String, valueText: String) {
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Text(
+      label,
+      style = MaterialTheme.typography.labelSmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Text(
+      valueText,
+      style = MaterialTheme.typography.titleMedium,
+    )
+  }
+}
+
+@Composable
+private fun InjectPreviewContent(state: ConfigUiState, callbacks: MainScreenCallbacks) {
+  Text(
+    stringResource(R.string.preview_hint),
+    style = MaterialTheme.typography.bodySmall,
+    color = MaterialTheme.colorScheme.onSurfaceVariant,
+  )
+  Spacer(Modifier.height(12.dp))
+
+  // Sample buttons
+  Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(4.dp),
+  ) {
+    SAMPLE_KB.forEach { kb ->
+      FilledTonalButton(
+        onClick = { callbacks.onSampleClick(kb) },
+        modifier = Modifier.weight(1f),
+      ) {
+        Text("${kb}KB")
+      }
+    }
+  }
+  Spacer(Modifier.height(8.dp))
+
+  // Slider + preview label
+  Row(
+    modifier = Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Slider(
+      value = state.previewSlider.toFloat(),
+      onValueChange = { callbacks.onPreviewSliderChange(it.toInt()) },
+      valueRange = 0f..1200f,
+      modifier = Modifier.weight(1f),
+    )
+    Spacer(Modifier.width(8.dp))
+    Text(
+      state.previewLabel,
+      modifier = Modifier.width(72.dp),
+      textAlign = TextAlign.End,
+    )
+  }
+}
+
+private fun formatBytesPerSec(bps: Long): String {
+  if (bps < 0) return "-"
+  val kb = bps / 1024
+  val d1 = bps * 10 / 1024 % 10
+  return "%d.%d KB/s".format(kb, d1)
 }
 
 //-----------------------------------------------------------

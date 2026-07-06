@@ -46,6 +46,10 @@
     <string name="desc_auto_start_on_boot">Inicia el servicio automáticamente al encender el dispositivo. Cuando la pantalla se apaga, el servicio se pausa automáticamente para ahorrar batería.</string>
 
     <string name="preview_hint">Arrastra el deslizador o toca una muestra para inyectar un valor de previsualización en la superposición</string>
+    <string name="preview_live_mode">Tráfico en vivo</string>
+    <string name="preview_live_mode_desc">Muestra el tráfico de red actual en tiempo real. Desactívalo para inyectar valores de previsualización con el deslizador o los botones de muestra.</string>
+    <string name="preview_live_upload">Subida</string>
+    <string name="preview_live_download">Bajada</string>
 
     <!-- Panel de ajustes rápidos -->
     <string name="tile_label">Medidor de velocidad</string>

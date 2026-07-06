@@ -46,6 +46,10 @@
     <string name="desc_auto_start_on_boot">기기 부팅 시 서비스를 자동으로 시작합니다. 화면이 꺼지면 배터리 절약을 위해 서비스가 자동으로 일시 정지됩니다.</string>
 
     <string name="preview_hint">슬라이더를 드래그하거나 샘플을 눌러 오버레이에 미리보기 값을 주입합니다</string>
+    <string name="preview_live_mode">실시간 트래픽 표시</string>
+    <string name="preview_live_mode_desc">현재 네트워크 트래픽을 실시간으로 표시합니다. 끄면 슬라이더나 샘플 버튼으로 미리보기 값을 주입할 수 있습니다.</string>
+    <string name="preview_live_upload">업로드</string>
+    <string name="preview_live_download">다운로드</string>
 
     <!-- 빠른 설정 타일 -->
     <string name="tile_label">속도 미터</string>

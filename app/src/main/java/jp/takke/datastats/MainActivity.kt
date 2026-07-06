@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.net.TrafficStats
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +16,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.os.RemoteException
+import android.os.SystemClock
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -27,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import jp.takke.datastats.ui.AppTheme
 import jp.takke.datastats.ui.ConfigUiState
@@ -37,6 +40,10 @@ import jp.takke.datastats.ui.OnboardingScreen
 import jp.takke.datastats.ui.OnboardingUiState
 import jp.takke.util.MyLog
 import jp.takke.util.TkConfig
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -54,6 +61,9 @@ class MainActivity : ComponentActivity() {
   // オンボーディング状態
   private var mShowOnboarding by mutableStateOf(false)
   private var mOnboardingState by mutableStateOf(OnboardingUiState())
+
+  // 実トラフィックのライブプレビュー用ポーリング Job
+  private var mLiveTrafficJob: Job? = null
 
   private val mServiceConnection = object : ServiceConnection {
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
@@ -133,6 +143,45 @@ class MainActivity : ComponentActivity() {
   override fun onResume() {
     super.onResume()
     refreshOnboardingState()
+    if (mUiState.previewLiveMode) {
+      startLiveTrafficPolling()
+    }
+  }
+
+  //----------------------------------------------------------------
+  // 実トラフィックのライブプレビュー
+  //----------------------------------------------------------------
+
+  private fun startLiveTrafficPolling() {
+    if (mLiveTrafficJob?.isActive == true) return
+    mLiveTrafficJob = lifecycleScope.launch {
+      var lastTx = TrafficStats.getTotalTxBytes()
+      var lastRx = TrafficStats.getTotalRxBytes()
+      var lastTime = SystemClock.elapsedRealtime()
+      while (isActive) {
+        delay(1000L)
+        val now = SystemClock.elapsedRealtime()
+        val tx = TrafficStats.getTotalTxBytes()
+        val rx = TrafficStats.getTotalRxBytes()
+        val elapsed = now - lastTime
+        val unsupported = TrafficStats.UNSUPPORTED.toLong()
+        if (tx != unsupported && rx != unsupported && elapsed > 0 && lastTx > 0 && lastRx > 0) {
+          val diffTx = maxOf(0L, tx - lastTx)
+          val diffRx = maxOf(0L, rx - lastRx)
+          val txBps = diffTx * 1000L / elapsed
+          val rxBps = diffRx * 1000L / elapsed
+          mUiState = mUiState.copy(previewLiveTxBps = txBps, previewLiveRxBps = rxBps)
+        }
+        lastTx = tx
+        lastRx = rx
+        lastTime = now
+      }
+    }
+  }
+
+  private fun stopLiveTrafficPolling() {
+    mLiveTrafficJob?.cancel()
+    mLiveTrafficJob = null
   }
 
   private fun shouldShowOnboarding(): Boolean {
@@ -310,6 +359,16 @@ class MainActivity : ComponentActivity() {
       )
       startSnapshot(kb.toLong() * 1024)
     },
+    onPreviewLiveModeChange = { live ->
+      mUiState = mUiState.copy(previewLiveMode = live)
+      if (live) {
+        // 前のセッションでスナップショットが残っていたらクリア
+        doRestartService()
+        startLiveTrafficPolling()
+      } else {
+        stopLiveTrafficPolling()
+      }
+    },
     onStart = { doRestartService() },
     onStop = { doStopService() },
     onRestart = {
@@ -352,6 +411,9 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onPause() {
+
+    // 画面外ではライブポーリング停止
+    stopLiveTrafficPolling()
 
     // プレビュー状態の解除
     if (mServiceIF != null) {

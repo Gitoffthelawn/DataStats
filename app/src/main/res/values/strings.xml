@@ -46,6 +46,10 @@
     <string name="desc_auto_start_on_boot">Start the service automatically when the device boots. When the screen turns off the service automatically pauses to save battery.</string>
 
     <string name="preview_hint">Drag the slider or tap a sample to inject a preview value into the overlay</string>
+    <string name="preview_live_mode">Live traffic</string>
+    <string name="preview_live_mode_desc">Show the current network traffic in real time. Turn off to inject preview values with a slider or sample buttons.</string>
+    <string name="preview_live_upload">Upload</string>
+    <string name="preview_live_download">Download</string>
 
     <!-- Quick Settings tile -->
     <string name="tile_label">Speed meter</string>

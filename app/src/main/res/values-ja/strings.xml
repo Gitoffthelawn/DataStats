@@ -46,6 +46,10 @@
     <string name="desc_auto_start_on_boot">端末起動時にサービスを自動起動します。画面 OFF 中は自動停止しバッテリを節約します。</string>
 
     <string name="preview_hint">スライダーやサンプルボタンでオーバーレイにプレビュー値を注入します</string>
+    <string name="preview_live_mode">実トラフィック表示</string>
+    <string name="preview_live_mode_desc">現在の通信量をリアルタイムに表示します。オフにするとスライダーやサンプルボタンでプレビュー値を注入できます。</string>
+    <string name="preview_live_upload">アップロード</string>
+    <string name="preview_live_download">ダウンロード</string>
 
     <!-- クイック設定タイル -->
     <string name="tile_label">速度メーター</string>

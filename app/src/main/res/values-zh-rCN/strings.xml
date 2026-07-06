@@ -46,6 +46,10 @@
     <string name="desc_auto_start_on_boot">设备启动时自动启动服务。屏幕关闭时服务将自动暂停以节省电量。</string>
 
     <string name="preview_hint">拖动滑块或点击示例按钮，将预览值注入悬浮窗</string>
+    <string name="preview_live_mode">实时流量显示</string>
+    <string name="preview_live_mode_desc">实时显示当前的网络流量。关闭后可通过滑块或示例按钮注入预览值。</string>
+    <string name="preview_live_upload">上传</string>
+    <string name="preview_live_download">下载</string>
 
     <!-- 快速设置磁贴 -->
     <string name="tile_label">速度表</string>
