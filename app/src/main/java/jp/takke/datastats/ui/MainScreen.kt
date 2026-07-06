@@ -54,6 +54,7 @@ data class ConfigUiState(
   val hideWhenInFullscreen: Boolean = false,
   val logBar: Boolean = true,
   val interpolateMode: Boolean = false,
+  val sparklineMode: Boolean = false,
   val textSizeSp: Int = 10,
   val xPos: Int = 100,
   val intervalMs: Int = 1000,
@@ -72,6 +73,7 @@ data class MainScreenCallbacks(
   val onHideWhenInFullscreenChange: (Boolean) -> Unit = {},
   val onLogBarChange: (Boolean) -> Unit = {},
   val onInterpolateChange: (Boolean) -> Unit = {},
+  val onSparklineChange: (Boolean) -> Unit = {},
   val onTextSizeDelta: (Int) -> Unit = {},
   val onXPosChange: (Int) -> Unit = {},
   val onIntervalChange: (Int) -> Unit = {},
@@ -242,6 +244,15 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
       description = stringResource(R.string.desc_logarithm_bar),
       checked = state.logBar,
       onCheckedChange = callbacks.onLogBarChange,
+    )
+    RowDivider()
+
+    // Sparkline (switch)
+    SwitchRow(
+      title = stringResource(R.string.config_sparkline),
+      description = stringResource(R.string.desc_sparkline),
+      checked = state.sparklineMode,
+      onCheckedChange = callbacks.onSparklineChange,
     )
     RowDivider()
 

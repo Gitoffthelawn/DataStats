@@ -3,9 +3,11 @@ package jp.takke.datastats
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.PorterDuff
 import android.graphics.Typeface
@@ -46,8 +48,10 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
   // 描画用オブジェクト(毎フレーム再生成すると GC 圧が大きいためフィールドで再利用)
   private val mPaint = Paint()
   private val mPaintUd = Paint()
+  private val mPaintSparkline = Paint()
   private val mUploadMatrix = Matrix()
   private val mDownloadMatrix = Matrix()
+  private val mSparklinePath = Path()
 
   // Resources から取得する値のキャッシュ(不変)
   private var mResCached = false
@@ -339,8 +343,68 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 //                    mScreenWidth-paddingRight, mScreenHeight-10, paint);
 //        }
 
+    //--------------------------------------------------
+    // sparkline (direct 60s trend overlay)
+    //--------------------------------------------------
+    if (Config.sparklineMode) {
+      drawSparklines(canvas, xDownloadStart)
+    }
 
     mSurfaceHolder!!.unlockCanvasAndPost(canvas)
+  }
+
+  /**
+   * 直近履歴を左右半分に分けてスパークライン(上り: 左, 下り: 右)として描画する。
+   * 上り/下りバー本体には触れず、上に重ねて描く。
+   */
+  private fun drawSparklines(canvas: Canvas, xDownloadStart: Int) {
+    // 履歴をスレッド安全にスナップショット
+    val snapshot: List<Traffic>
+    synchronized(mTrafficList) {
+      if (mTrafficList.size < 2) return
+      snapshot = ArrayList(mTrafficList)
+    }
+
+    drawOneSparkline(canvas, snapshot, xStart = 0, xEnd = xDownloadStart, isTx = true)
+    drawOneSparkline(canvas, snapshot, xStart = xDownloadStart, xEnd = mScreenWidth, isTx = false)
+  }
+
+  private fun drawOneSparkline(
+    canvas: Canvas,
+    snapshot: List<Traffic>,
+    xStart: Int,
+    xEnd: Int,
+    isTx: Boolean,
+  ) {
+    val n = snapshot.size
+    if (n < 2) return
+
+    val width = (xEnd - xStart).toFloat()
+    val height = mScreenHeight.toFloat()
+
+    val paint = mPaintSparkline
+    paint.style = Paint.Style.STROKE
+    // Density に応じた線幅にしたいところだが 20fps 描画のため軽量化を優先し固定値
+    paint.strokeWidth = 1.5f
+    paint.color = SPARKLINE_COLOR
+    paint.isAntiAlias = true
+
+    val path = mSparklinePath
+    path.reset()
+
+    // 履歴の等間隔プロット(サンプル間の時間差は無視して、index 位置ベースで描く)
+    // 実測ミリ秒差でスケーリングすると Config.intervalMs 変更時に見た目が跳ねやすいため
+    val step = width / (n - 1).toFloat()
+    for (i in 0 until n) {
+      val t = snapshot[i]
+      val p = if (isTx) t.pTx else t.pRx  // [0, 1000]
+      val x = xStart + step * i
+      // 上方向が大きい値になるよう Y を反転
+      val y = height - (p / 1000f * height)
+      if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+
+    canvas.drawPath(path, paint)
   }
 
   /** Resources 由来の値(色・寸法)を一度だけロードしてキャッシュする */
@@ -501,7 +565,17 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
   companion object {
 
     private const val TARGET_FPS: Long = 20
-    private const val TRAFFIC_LIST_COUNT_MAX = 3
+
+    /**
+     * 履歴 Traffic の保持数。
+     * スパークライン(直近 60 秒分)を描画できるよう十分な余裕を持たせている。
+     * 1 秒間隔で 60 秒、0.5 秒間隔で 30 秒相当を保持する。
+     * 補間・スパークラインどちらも off の場合でも履歴保持コストは Traffic オブジェクト数十個分で無視できる。
+     */
+    private const val TRAFFIC_LIST_COUNT_MAX = 60
+
+    // 半透明の淡黄色。バーの赤(upload)・青(download)グラデーション上でも視認しやすい。
+    private const val SPARKLINE_COLOR = 0xE6FFF176.toInt()
 
 
     @Volatile

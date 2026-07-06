@@ -11,6 +11,7 @@ object C {
   const val PREF_KEY_INTERPOLATE_MODE = "interpolateMode"
   const val PREF_KEY_TEXT_SIZE_SP = "textSizeSp"
   const val PREF_KEY_UNIT_TYPE_BPS = "unitTypeBps"
+  const val PREF_KEY_SPARKLINE_MODE = "sparklineMode"
   const val PREF_KEY_ONBOARDING_DONE = "onboardingDone"
 
   const val DEFAULT_TEXT_SIZE_SP = 8

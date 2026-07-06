@@ -4,6 +4,7 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- Feature: optional sparkline overlay showing the last ~60 seconds of upload/download traffic on top of the meter (toggle in Display section)
 - Perf: cache updateWidgetSize inputs to skip layout / getIdentifier calls when nothing changed each second
 - Perf: reuse Paint / Matrix / cached Resources values in MySurfaceView.myDrawFrame instead of per-frame allocation
 - Perf: MyLog.d { ... } inline lambda overload skips string concatenation when debug logging is disabled

@@ -22,6 +22,9 @@ object Config {
 
   var interpolateMode: Boolean = false
 
+  /** 直近履歴のスパークライン(ミニグラフ)をオーバーレイに重ねて描画するかどうか */
+  var sparklineMode: Boolean = false
+
   var textSizeSp: Int = C.DEFAULT_TEXT_SIZE_SP
 
 
@@ -38,6 +41,7 @@ object Config {
     logBar = pref.getBoolean(C.PREF_KEY_LOGARITHM_BAR, true)
     hideWhenInFullscreen = pref.getBoolean(C.PREF_KEY_HIDE_WHEN_IN_FULLSCREEN, true)
     interpolateMode = pref.getBoolean(C.PREF_KEY_INTERPOLATE_MODE, false)
+    sparklineMode = pref.getBoolean(C.PREF_KEY_SPARKLINE_MODE, false)
     textSizeSp = pref.getInt(C.PREF_KEY_TEXT_SIZE_SP, C.DEFAULT_TEXT_SIZE_SP)
 
     // 文字色変更基準の再計算

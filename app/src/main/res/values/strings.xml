@@ -17,6 +17,7 @@
     <string name="config_unit_type">Unit Type</string>
     <string name="config_logarithm_bar">Logarithm bar</string>
     <string name="config_interpolate">Interpolate(notice battery life)</string>
+    <string name="config_sparkline">Speed history sparkline</string>
 
     <string name="preview">Preview</string>
     <string name="resident_service_running">DataStats service running</string>
@@ -41,6 +42,7 @@
     <string name="desc_hide_when_in_fullscreen">Automatically hide while a fullscreen app is running</string>
     <string name="desc_interval">Overlay refresh interval</string>
     <string name="desc_interpolate">Smoothly animate between samples (higher battery usage)</string>
+    <string name="desc_sparkline">Overlay a mini graph of the last minute\'s traffic on the meter</string>
     <string name="desc_auto_start_on_boot">Start the service automatically when the device boots. When the screen turns off the service automatically pauses to save battery.</string>
 
     <string name="preview_hint">Drag the slider or tap a sample to inject a preview value into the overlay</string>

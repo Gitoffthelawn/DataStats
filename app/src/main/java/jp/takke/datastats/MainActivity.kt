@@ -229,6 +229,7 @@ class MainActivity : ComponentActivity() {
       hideWhenInFullscreen = Config.hideWhenInFullscreen,
       logBar = Config.logBar,
       interpolateMode = Config.interpolateMode,
+      sparklineMode = Config.sparklineMode,
       textSizeSp = Config.textSizeSp,
       xPos = Config.xPos,
       intervalMs = Config.intervalMs,
@@ -259,6 +260,12 @@ class MainActivity : ComponentActivity() {
       mUiState = mUiState.copy(interpolateMode = checked)
       // サービス再起動時に MySurfaceView.applyInterpolationConfig() が呼ばれるので
       // Surface を作り直す必要はなく、restart のみで即座に反映される
+      doRestartService()
+    },
+    onSparklineChange = { checked ->
+      savePref { putBoolean(C.PREF_KEY_SPARKLINE_MODE, checked) }
+      mUiState = mUiState.copy(sparklineMode = checked)
+      // 描画スレッドは restart で Config を読み直し、次フレームからスパークラインが反映される
       doRestartService()
     },
     onTextSizeDelta = { delta -> updateTextSize(delta) },
