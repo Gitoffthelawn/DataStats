@@ -1,6 +1,18 @@
 Change Log
 ==========
 
+v3.1.0 (2026.07.xx)
+-------------------
+
+- compileSdkVersion 36 -> 37
+- Java 8 -> 11
+- Update library
+    - BuildTools 36.0.0 -> 37.0.0
+    - Gradle 9.4.0 -> 9.6.1
+    - AGP 9.0.1 -> 9.2.1
+    - Kotlin 2.3.10 -> 2.4.0
+    - AndroidX Core 1.17.0 -> 1.19.0
+
 v3.0.0 (2026.03.11)
 -------------------
 
