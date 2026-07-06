@@ -4,6 +4,7 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- Fix: use SystemClock.elapsedRealtime() for interval measurement to avoid wall-clock changes affecting the speed calculation
 - Fix: handle TrafficStats UNSUPPORTED (-1) devices and clamp negative diffs caused by counter reset
 - Fix: keep the notification during screen off (previously the foreground notification could not be dismissed by cancel())
 - Add @Volatile to shared thread flags to fix memory visibility issues

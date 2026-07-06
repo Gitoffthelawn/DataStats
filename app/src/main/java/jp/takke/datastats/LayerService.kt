@@ -55,7 +55,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   private var mDiffRxBytes: Long = 0
   private var mDiffTxBytes: Long = 0
 
-  private var mLastTime = System.currentTimeMillis()
+  // 経過時間計算には単調増加クロックを使う(壁時計時刻の変更で狂わないように)
+  private var mLastTime = SystemClock.elapsedRealtime()
   private var mElapsedMs = Config.intervalMs.toLong()
 
 
@@ -554,9 +555,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     ) {
       mDiffRxBytes = 0
       mDiffTxBytes = 0
-      val now = System.currentTimeMillis()
+      val now = SystemClock.elapsedRealtime()
       mElapsedMs = now - mLastTime
-      if (mElapsedMs <= 0L) {  // prohibit div by zero / 時刻変更による負値
+      if (mElapsedMs <= 0L) {  // prohibit div by zero
         mElapsedMs = Config.intervalMs.toLong()
       }
       mLastTime = now
@@ -587,9 +588,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 //            MyLog.d("loopback[" + diffLoopbackRxBytes + "][" + diffLoopbackTxBytes + "]")
     }
 
-    val now = System.currentTimeMillis()
+    val now = SystemClock.elapsedRealtime()
     mElapsedMs = now - mLastTime
-    if (mElapsedMs <= 0L) {  // prohibit div by zero / 時刻変更による負値
+    if (mElapsedMs <= 0L) {  // prohibit div by zero
       mElapsedMs = Config.intervalMs.toLong()
     }
     mLastTime = now
