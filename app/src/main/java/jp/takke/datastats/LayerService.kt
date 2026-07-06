@@ -548,11 +548,27 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     val totalRxBytes = TrafficStats.getTotalRxBytes()
     val totalTxBytes = TrafficStats.getTotalTxBytes()
 
+    // TrafficStats.UNSUPPORTED (-1) が返る端末では diff 計算ができないので 0 として扱う
+    if (totalRxBytes == TrafficStats.UNSUPPORTED.toLong() ||
+      totalTxBytes == TrafficStats.UNSUPPORTED.toLong()
+    ) {
+      mDiffRxBytes = 0
+      mDiffTxBytes = 0
+      val now = System.currentTimeMillis()
+      mElapsedMs = now - mLastTime
+      if (mElapsedMs <= 0L) {  // prohibit div by zero / 時刻変更による負値
+        mElapsedMs = Config.intervalMs.toLong()
+      }
+      mLastTime = now
+      return
+    }
+
     if (mLastRxBytes > 0) {
-      mDiffRxBytes = totalRxBytes - mLastRxBytes
+      // カウンタリセット(モデム再初期化等)で負値になるケースをクランプ
+      mDiffRxBytes = maxOf(0L, totalRxBytes - mLastRxBytes)
     }
     if (mLastTxBytes > 0) {
-      mDiffTxBytes = totalTxBytes - mLastTxBytes
+      mDiffTxBytes = maxOf(0L, totalTxBytes - mLastTxBytes)
     }
 
     // loopback通信量を省く処理
@@ -564,8 +580,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       val loopbackTxBytes = MyTrafficUtil.loopbackTxBytes
       val diffLoopbackRxBytes = loopbackRxBytes - mLastLoopbackRxBytes
       val diffLoopbackTxBytes = loopbackTxBytes - mLastLoopbackTxBytes
-      mDiffRxBytes -= diffLoopbackRxBytes
-      mDiffTxBytes -= diffLoopbackTxBytes
+      mDiffRxBytes = maxOf(0L, mDiffRxBytes - diffLoopbackRxBytes)
+      mDiffTxBytes = maxOf(0L, mDiffTxBytes - diffLoopbackTxBytes)
       mLastLoopbackRxBytes = loopbackRxBytes
       mLastLoopbackTxBytes = loopbackTxBytes
 //            MyLog.d("loopback[" + diffLoopbackRxBytes + "][" + diffLoopbackTxBytes + "]")
@@ -573,7 +589,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     val now = System.currentTimeMillis()
     mElapsedMs = now - mLastTime
-    if (mElapsedMs == 0L) {  // prohibit div by zero
+    if (mElapsedMs <= 0L) {  // prohibit div by zero / 時刻変更による負値
       mElapsedMs = Config.intervalMs.toLong()
     }
     mLastTime = now
