@@ -40,6 +40,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   @Volatile
   private var mAttached = false
 
+  // onCreate 時点でオーバーレイ権限があったかどうか
+  private var mHasOverlayPermission = false
+
 
   @Volatile
   private var mSleeping = false
@@ -289,10 +292,14 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     MyLog.d("LayerService.onCreate")
 
     // M以降の権限対応
+    // 権限がない状態でBootReceiver等から起動されると何も表示しないサービスが常駐するため
+    // onStartCommand側でstopSelfして即座に停止する
     if (!OverlayUtil.checkOverlayPermission(this)) {
       MyLog.w("no overlay permission")
       return
     }
+
+    mHasOverlayPermission = true
 
     // Viewからインフレータを作成する
     val layoutInflater = LayoutInflater.from(this)
@@ -347,6 +354,17 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     val action = intent?.action
     MyLog.d("LayerService.onStartCommand flags[$flags] startId[$startId] intent.action[$action]")
+
+    // オーバーレイ権限がない状態(BootReceiver経由等)で起動された場合は
+    // 何もせず自身を停止する。FGS の 5 秒ルールを満たすため一度だけ startForeground してから終了する。
+    if (!mHasOverlayPermission) {
+      MyLog.w("LayerService.onStartCommand: no overlay permission -> stopSelf")
+      mNotificationPresenter.createNotificationChannel()
+      showNotification()
+      mNotificationPresenter.hideNotification()
+      stopSelf()
+      return START_NOT_STICKY
+    }
 
     // 通信量取得スレッド開始
     if (mThread == null) {

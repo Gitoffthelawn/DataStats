@@ -4,6 +4,7 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- Fix: stop the service immediately when started without overlay permission (previously it stayed resident invisibly when auto-started at boot)
 - Fix: prevent ServiceConnection leak when Activity is destroyed before onServiceConnected
 - Fix: use SystemClock.elapsedRealtime() for interval measurement to avoid wall-clock changes affecting the speed calculation
 - Fix: handle TrafficStats UNSUPPORTED (-1) devices and clamp negative diffs caused by counter reset
