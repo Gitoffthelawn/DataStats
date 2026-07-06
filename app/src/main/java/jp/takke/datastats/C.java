@@ -11,6 +11,7 @@ public class C {
     public static final String PREF_KEY_INTERPOLATE_MODE = "interpolateMode";
     public static final String PREF_KEY_TEXT_SIZE_SP = "textSizeSp";
     public static final String PREF_KEY_UNIT_TYPE_BPS = "unitTypeBps";
+    public static final String PREF_KEY_ONBOARDING_DONE = "onboardingDone";
 
     public static final int DEFAULT_TEXT_SIZE_SP = 8;
 

@@ -4,6 +4,7 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- UI: first-launch onboarding screen explaining why the overlay / notification / battery-optimization settings are needed; the resident service is turned on by default when onboarding completes
 - UI: revamp the settings screen with Jetpack Compose + Material 3 (DayNight, Material You dynamic colors), grouped into Display / Behavior / Startup sections with per-setting descriptions
 - Refactor: route force-redraw requests through AIDL (ILayerService.forceRedraw) instead of Activity poking the SurfaceView static
 - Fix: dispatch onScreenOff to the main thread from the gather worker to avoid races on state flags and handler registration

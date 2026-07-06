@@ -45,4 +45,19 @@
 
     <string name="preview_hint">Drag the slider or tap a sample to inject a preview value into the overlay</string>
 
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome to DataStats</string>
+    <string name="onboarding_intro">DataStats shows a real-time network speed meter as an overlay on your screen. Please grant the following permissions so the app can work reliably.</string>
+    <string name="onboarding_step_overlay_title">1. Display over other apps</string>
+    <string name="onboarding_step_overlay_desc">Required to show the speed meter on top of other apps.</string>
+    <string name="onboarding_step_notification_title">2. Notifications</string>
+    <string name="onboarding_step_notification_desc">Required for the resident notification that lets you show/hide the overlay quickly.</string>
+    <string name="onboarding_step_battery_title">3. Ignore battery optimizations (optional)</string>
+    <string name="onboarding_step_battery_desc">Recommended so aggressive OEM battery savers don\'t kill the service in the background.</string>
+    <string name="onboarding_grant">Grant</string>
+    <string name="onboarding_configure">Configure</string>
+    <string name="onboarding_granted">Granted</string>
+    <string name="onboarding_start">Start</string>
+    <string name="onboarding_required_missing">Please grant the required permissions above.</string>
+
 </resources>

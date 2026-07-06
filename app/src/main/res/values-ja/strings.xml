@@ -45,4 +45,19 @@
 
     <string name="preview_hint">スライダーやサンプルボタンでオーバーレイにプレビュー値を注入します</string>
 
+    <!-- オンボーディング -->
+    <string name="onboarding_title">DataStats へようこそ</string>
+    <string name="onboarding_intro">DataStats は通信速度メーターを画面上にオーバーレイ表示するアプリです。安定動作のため次の権限を許可してください。</string>
+    <string name="onboarding_step_overlay_title">1. 他のアプリの上に重ねて表示</string>
+    <string name="onboarding_step_overlay_desc">スピードメーターを他アプリの上に重ねて表示するために必要です。</string>
+    <string name="onboarding_step_notification_title">2. 通知</string>
+    <string name="onboarding_step_notification_desc">オーバーレイの表示/非表示を素早く切り替えるための常駐通知に使用します。</string>
+    <string name="onboarding_step_battery_title">3. 電池の最適化を無効にする(任意)</string>
+    <string name="onboarding_step_battery_desc">メーカー独自の電池最適化によりバックグラウンドでサービスが停止されるのを防ぐため、無効化を推奨します。</string>
+    <string name="onboarding_grant">許可する</string>
+    <string name="onboarding_configure">設定を開く</string>
+    <string name="onboarding_granted">許可済み</string>
+    <string name="onboarding_start">開始</string>
+    <string name="onboarding_required_missing">必須の権限を許可してください。</string>
+
 </resources>

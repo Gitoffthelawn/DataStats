@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import android.os.RemoteException
 import android.provider.Settings
 import android.widget.Toast
@@ -31,6 +32,9 @@ import jp.takke.datastats.ui.AppTheme
 import jp.takke.datastats.ui.ConfigUiState
 import jp.takke.datastats.ui.MainScreen
 import jp.takke.datastats.ui.MainScreenCallbacks
+import jp.takke.datastats.ui.OnboardingCallbacks
+import jp.takke.datastats.ui.OnboardingScreen
+import jp.takke.datastats.ui.OnboardingUiState
 import jp.takke.util.MyLog
 import jp.takke.util.TkConfig
 
@@ -46,6 +50,10 @@ class MainActivity : ComponentActivity() {
 
   // Compose UI 状態
   private var mUiState by mutableStateOf(ConfigUiState())
+
+  // オンボーディング状態
+  private var mShowOnboarding by mutableStateOf(false)
+  private var mOnboardingState by mutableStateOf(OnboardingUiState())
 
   private val mServiceConnection = object : ServiceConnection {
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
@@ -65,91 +73,152 @@ class MainActivity : ComponentActivity() {
 
   private val overlayPermissionLauncher =
     registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-      if (OverlayUtil.checkOverlayPermission(this)) {
-        MyLog.i("MainActivity: overlay permission OK")
-
-        // restart service
+      refreshOnboardingState()
+      if (!mShowOnboarding && OverlayUtil.checkOverlayPermission(this)) {
+        // 従来フロー(オンボーディング済で不足だった権限が入った場合の再開)
         doStopService()
         doRestartService()
-      } else {
-        MyLog.i("MainActivity: overlay permission NG")
-        finish()
       }
+    }
+
+  private val batteryOptimizationLauncher =
+    registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+      refreshOnboardingState()
     }
 
   private val requestPermissionLauncher =
     registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+      refreshOnboardingState()
       if (isGranted) {
-        MyLog.d("PreviewActivity: POST_NOTIFICATION: 通知許可")
+        MyLog.d("POST_NOTIFICATION: 通知許可")
       } else {
-        MyLog.i("PreviewActivity: POST_NOTIFICATION: 通知許可しない")
+        MyLog.i("POST_NOTIFICATION: 通知許可しない")
         if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
           Toast.makeText(this, "通知を受け取るには許可が必要です", Toast.LENGTH_LONG).show()
-        } else {
-          MyLog.i("PreviewActivity: POST_NOTIFICATION: 通知許可しない(永続的)")
-
-          NotificationPermissionUtil.showNotificationPermissionRationaleDialog(
-            this,
-            onOk = { MyLog.d("通知権限: OK") },
-            onCancel = { MyLog.d("通知権限: キャンセル") },
-          )
         }
       }
     }
-
-  @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-  private fun checkNotificationPermission() {
-    val notificationPermission =
-      ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-    val notificationRationale =
-      shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
-
-    if (notificationPermission == PackageManager.PERMISSION_GRANTED) {
-      MyLog.d("PreviewActivity: POST_NOTIFICATION: 通知許可済み")
-    } else {
-      if (notificationRationale) {
-        MyLog.i("PreviewActivity: POST_NOTIFICATION: 以前に「許可をしない」を選択済み")
-
-        NotificationPermissionUtil.showNotificationPermissionRationaleDialog(
-          this,
-          onOk = {
-            MyLog.d("通知権限: OK")
-            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-          },
-          onCancel = { MyLog.d("通知権限: キャンセル") },
-        )
-      } else {
-        MyLog.d("PreviewActivity: POST_NOTIFICATION: 通知許可リクエスト")
-        requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-      }
-    }
-  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      checkNotificationPermission()
-    }
-
     MyLog.d("MainActivity.onCreate")
 
     loadUiStateFromPrefs()
+    refreshOnboardingState()
+    mShowOnboarding = shouldShowOnboarding()
 
     setContent {
       AppTheme {
-        MainScreen(state = mUiState, callbacks = buildCallbacks())
+        if (mShowOnboarding) {
+          OnboardingScreen(state = mOnboardingState, callbacks = buildOnboardingCallbacks())
+        } else {
+          MainScreen(state = mUiState, callbacks = buildCallbacks())
+        }
       }
     }
 
-    if (!OverlayUtil.checkOverlayPermission(this)) {
-      requestOverlayPermission()
-    } else {
-      doBindService()
+    if (!mShowOnboarding) {
+      // 通知権限は初回のみオンボーディングで要求するが、
+      // オンボーディング済かつ拒否済みの状態から復帰する場合の再確認は不要にしている
+      if (OverlayUtil.checkOverlayPermission(this)) {
+        doBindService()
+      }
     }
 
     MyLog.deleteBigExternalLogFile()
+  }
+
+  override fun onResume() {
+    super.onResume()
+    refreshOnboardingState()
+  }
+
+  private fun shouldShowOnboarding(): Boolean {
+    val pref = PreferenceManager.getDefaultSharedPreferences(this)
+    val onboarded = pref.getBoolean(C.PREF_KEY_ONBOARDING_DONE, false)
+    // 初回起動時、または明示的な onboardingDone フラグが立っていない場合はオンボーディングを表示する。
+    // 既に必須権限がすべて揃っている場合(想定外だが)はスキップして通常フローに戻す。
+    if (onboarded) return false
+    return !mOnboardingState.canProceed
+  }
+
+  private fun refreshOnboardingState() {
+    val overlay = OverlayUtil.checkOverlayPermission(this)
+    val notifRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    val notifGranted = if (!notifRequired) true
+    else ContextCompat.checkSelfPermission(
+      this,
+      Manifest.permission.POST_NOTIFICATIONS,
+    ) == PackageManager.PERMISSION_GRANTED
+    val batteryIgnored = isIgnoringBatteryOptimizations()
+    mOnboardingState = OnboardingUiState(
+      overlayGranted = overlay,
+      notificationGranted = notifGranted,
+      notificationRequired = notifRequired,
+      batteryOptimizationIgnored = batteryIgnored,
+    )
+  }
+
+  private fun isIgnoringBatteryOptimizations(): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+    val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+    return pm.isIgnoringBatteryOptimizations(packageName)
+  }
+
+  private fun buildOnboardingCallbacks(): OnboardingCallbacks = OnboardingCallbacks(
+    onGrantOverlay = { requestOverlayPermission() },
+    onGrantNotification = {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        requestNotificationPermission()
+      }
+    },
+    onConfigureBattery = { openBatteryOptimizationSettings() },
+    onComplete = { completeOnboarding() },
+  )
+
+  @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+  private fun requestNotificationPermission() {
+    val rationale = shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+    if (rationale) {
+      NotificationPermissionUtil.showNotificationPermissionRationaleDialog(
+        this,
+        onOk = { requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+        onCancel = { MyLog.d("通知権限: キャンセル") },
+      )
+    } else {
+      requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+  }
+
+  private fun openBatteryOptimizationSettings() {
+    // ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS はアプリ一覧を開くだけの無害な導線。
+    // 直接除外を要求する ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS は Play ポリシー制約があるため使わない。
+    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+    try {
+      batteryOptimizationLauncher.launch(intent)
+    } catch (e: Exception) {
+      MyLog.e(e)
+      Toast.makeText(this, "Settings not available", Toast.LENGTH_SHORT).show()
+    }
+  }
+
+  private fun completeOnboarding() {
+    if (!mOnboardingState.canProceed) return
+
+    // オンボーディング済フラグと「常駐 ON」(端末起動時自動起動)を明示的に保存する。
+    // startOnBoot はデフォルト true だが、初期状態を明示してユーザ変更前の意図を prefs に固定する。
+    savePref {
+      putBoolean(C.PREF_KEY_ONBOARDING_DONE, true)
+      putBoolean(C.PREF_KEY_START_ON_BOOT, true)
+    }
+
+    mUiState = mUiState.copy(autoStartOnBoot = true)
+    mShowOnboarding = false
+
+    // サービス起動 → 常駐開始
+    doBindService()
   }
 
   private fun loadUiStateFromPrefs() {
