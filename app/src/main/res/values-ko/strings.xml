@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">통신 속도 미터</string>
+
+    <string name="config_config">설정</string>
+    <string name="config_start">시작</string>
+    <string name="config_stop">중지</string>
+    <string name="config_restart">재시작</string>
+    <string name="config_debug_mode">디버그 모드</string>
+    <string name="config_text_size">글자 크기</string>
+    <string name="config_auto_start_on_boot">부팅 시 자동 시작</string>
+    <string name="config_hide_when_in_fullscreen">전체화면 시 숨기기</string>
+    <string name="config_interval">업데이트 간격</string>
+    <string name="config_pos">X 위치</string>
+    <string name="config_bar_max_kb">바 최대 속도[KB]</string>
+    <string name="config_unit_type">속도 단위</string>
+    <string name="config_logarithm_bar">로그 스케일 바</string>
+    <string name="config_interpolate">보간 모드(배터리 소모 주의)</string>
+    <string name="config_sparkline">속도 이력 스파크라인</string>
+
+    <string name="preview">미리보기</string>
+    <string name="resident_service_running">DataStats 서비스 실행 중</string>
+
+    <string name="hide">숨김</string>
+    <string name="show">표시</string>
+    <string name="close_temporarily_resume_after_10_seconds">일시적으로 닫습니다. 10초 후에 다시 표시됩니다.</string>
+    <string name="resident_notification">상주 알림</string>
+    <string name="require_notification_permission">알림 권한이 필요합니다</string>
+
+    <!-- 섹션 헤더 -->
+    <string name="section_display">표시</string>
+    <string name="section_behavior">동작</string>
+    <string name="section_startup">시작</string>
+
+    <!-- 설정 항목 설명 -->
+    <string name="desc_text_size">오버레이 글자의 크기</string>
+    <string name="desc_pos">오버레이의 가로 위치</string>
+    <string name="desc_unit_type">속도 표시의 단위 선택</string>
+    <string name="desc_bar_max_kb">바가 가득 찰 때의 최대 속도</string>
+    <string name="desc_logarithm_bar">바를 로그 스케일로 표시</string>
+    <string name="desc_hide_when_in_fullscreen">전체화면 앱 실행 중에는 자동으로 숨김</string>
+    <string name="desc_interval">오버레이 갱신 주기. 화면이 꺼져 있는 동안 서비스는 자동으로 일시 정지되므로, 긴 간격은 화면이 켜져 있을 때만 배터리를 절약합니다.</string>
+    <string name="desc_interpolate">샘플 사이를 부드럽게 애니메이션 (배터리 소모 증가)</string>
+    <string name="desc_sparkline">최근 1분간의 트래픽을 미니 그래프로 오버레이에 겹쳐 표시</string>
+    <string name="desc_auto_start_on_boot">기기 부팅 시 서비스를 자동으로 시작합니다. 화면이 꺼지면 배터리 절약을 위해 서비스가 자동으로 일시 정지됩니다.</string>
+
+    <string name="preview_hint">슬라이더를 드래그하거나 샘플을 눌러 오버레이에 미리보기 값을 주입합니다</string>
+
+    <!-- 온보딩 -->
+    <string name="onboarding_title">DataStats에 오신 것을 환영합니다</string>
+    <string name="onboarding_intro">DataStats는 통신 속도를 실시간 오버레이로 표시합니다. 안정적으로 동작하도록 다음 권한을 허용해 주세요.</string>
+    <string name="onboarding_step_overlay_title">1. 다른 앱 위에 표시</string>
+    <string name="onboarding_step_overlay_desc">다른 앱 위에 속도 미터를 표시하기 위해 필요합니다.</string>
+    <string name="onboarding_step_notification_title">2. 알림</string>
+    <string name="onboarding_step_notification_desc">오버레이 표시/숨김을 빠르게 전환하는 상주 알림에 사용합니다.</string>
+    <string name="onboarding_step_battery_title">3. 배터리 최적화 해제(선택)</string>
+    <string name="onboarding_step_battery_desc">제조사의 배터리 절약 기능이 백그라운드에서 서비스를 종료하지 않도록 권장합니다.</string>
+    <string name="onboarding_grant">허용</string>
+    <string name="onboarding_configure">설정 열기</string>
+    <string name="onboarding_granted">허용됨</string>
+    <string name="onboarding_start">시작</string>
+    <string name="onboarding_required_missing">위의 필수 권한을 허용해 주세요.</string>
+
+</resources>

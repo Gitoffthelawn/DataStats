@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">通信速度表</string>
+
+    <string name="config_config">设置</string>
+    <string name="config_start">启动</string>
+    <string name="config_stop">停止</string>
+    <string name="config_restart">重启</string>
+    <string name="config_debug_mode">调试模式</string>
+    <string name="config_text_size">字体大小</string>
+    <string name="config_auto_start_on_boot">开机自动启动</string>
+    <string name="config_hide_when_in_fullscreen">全屏时隐藏</string>
+    <string name="config_interval">更新间隔</string>
+    <string name="config_pos">X 位置</string>
+    <string name="config_bar_max_kb">速度条最大值[KB]</string>
+    <string name="config_unit_type">速度单位</string>
+    <string name="config_logarithm_bar">对数速度条</string>
+    <string name="config_interpolate">平滑插值(注意耗电)</string>
+    <string name="config_sparkline">速度历史迷你图</string>
+
+    <string name="preview">预览</string>
+    <string name="resident_service_running">DataStats 服务运行中</string>
+
+    <string name="hide">隐藏</string>
+    <string name="show">显示</string>
+    <string name="close_temporarily_resume_after_10_seconds">暂时关闭，10 秒后重新显示</string>
+    <string name="resident_notification">常驻通知</string>
+    <string name="require_notification_permission">需要通知权限</string>
+
+    <!-- 分区标题 -->
+    <string name="section_display">显示</string>
+    <string name="section_behavior">行为</string>
+    <string name="section_startup">启动</string>
+
+    <!-- 设置说明 -->
+    <string name="desc_text_size">悬浮窗文字的字体大小</string>
+    <string name="desc_pos">悬浮窗的水平位置</string>
+    <string name="desc_unit_type">选择速度显示的单位</string>
+    <string name="desc_bar_max_kb">速度条充满时对应的最大速度</string>
+    <string name="desc_logarithm_bar">以对数刻度显示速度条</string>
+    <string name="desc_hide_when_in_fullscreen">全屏应用运行时自动隐藏</string>
+    <string name="desc_interval">悬浮窗更新周期。屏幕关闭时服务将自动暂停，因此更长的间隔仅在屏幕开启时节省电量。</string>
+    <string name="desc_interpolate">在两次采样之间平滑动画(耗电增加)</string>
+    <string name="desc_sparkline">在悬浮窗上叠加显示最近 1 分钟的流量迷你图</string>
+    <string name="desc_auto_start_on_boot">设备启动时自动启动服务。屏幕关闭时服务将自动暂停以节省电量。</string>
+
+    <string name="preview_hint">拖动滑块或点击示例按钮，将预览值注入悬浮窗</string>
+
+    <!-- 引导页 -->
+    <string name="onboarding_title">欢迎使用 DataStats</string>
+    <string name="onboarding_intro">DataStats 将以悬浮窗形式实时显示网络速度。请授予以下权限以确保应用稳定运行。</string>
+    <string name="onboarding_step_overlay_title">1. 显示在其他应用上层</string>
+    <string name="onboarding_step_overlay_desc">用于在其他应用上层显示速度表。</string>
+    <string name="onboarding_step_notification_title">2. 通知</string>
+    <string name="onboarding_step_notification_desc">用于常驻通知，可快速显示/隐藏悬浮窗。</string>
+    <string name="onboarding_step_battery_title">3. 忽略电池优化(可选)</string>
+    <string name="onboarding_step_battery_desc">建议开启，避免部分厂商激进的省电策略后台终止服务。</string>
+    <string name="onboarding_grant">授予</string>
+    <string name="onboarding_configure">打开设置</string>
+    <string name="onboarding_granted">已授予</string>
+    <string name="onboarding_start">开始</string>
+    <string name="onboarding_required_missing">请授予以上必需权限。</string>
+
+</resources>

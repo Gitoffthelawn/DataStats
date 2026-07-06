@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Medidor de velocidad</string>
+
+    <string name="config_config">Configuración</string>
+    <string name="config_start">Iniciar</string>
+    <string name="config_stop">Detener</string>
+    <string name="config_restart">Reiniciar</string>
+    <string name="config_debug_mode">Modo depuración</string>
+    <string name="config_text_size">Tamaño del texto</string>
+    <string name="config_auto_start_on_boot">Iniciar al arrancar</string>
+    <string name="config_hide_when_in_fullscreen">Ocultar en pantalla completa</string>
+    <string name="config_interval">Intervalo</string>
+    <string name="config_pos">Posición X</string>
+    <string name="config_bar_max_kb">Velocidad máx.[KB] (barra)</string>
+    <string name="config_unit_type">Unidad</string>
+    <string name="config_logarithm_bar">Barra logarítmica</string>
+    <string name="config_interpolate">Interpolar (afecta la batería)</string>
+    <string name="config_sparkline">Historial de velocidad</string>
+
+    <string name="preview">Vista previa</string>
+    <string name="resident_service_running">Servicio de DataStats en ejecución</string>
+
+    <string name="hide">Ocultar</string>
+    <string name="show">Mostrar</string>
+    <string name="close_temporarily_resume_after_10_seconds">Cerrar temporalmente. Se reanudará en 10 segundos.</string>
+    <string name="resident_notification">Residente</string>
+    <string name="require_notification_permission">Se requiere el permiso de notificaciones</string>
+
+    <!-- Secciones -->
+    <string name="section_display">Visualización</string>
+    <string name="section_behavior">Comportamiento</string>
+    <string name="section_startup">Inicio</string>
+
+    <!-- Descripciones -->
+    <string name="desc_text_size">Tamaño de fuente del texto de la superposición</string>
+    <string name="desc_pos">Posición horizontal de la superposición</string>
+    <string name="desc_unit_type">Elige la unidad para mostrar la velocidad</string>
+    <string name="desc_bar_max_kb">Velocidad máxima representada por la barra completa</string>
+    <string name="desc_logarithm_bar">Mostrar la barra en escala logarítmica</string>
+    <string name="desc_hide_when_in_fullscreen">Ocultar automáticamente cuando una app está en pantalla completa</string>
+    <string name="desc_interval">Intervalo de actualización de la superposición. El servicio se pausa automáticamente con la pantalla apagada, por lo que un intervalo mayor solo ahorra batería con la pantalla encendida.</string>
+    <string name="desc_interpolate">Anima suavemente entre muestras (más consumo de batería)</string>
+    <string name="desc_sparkline">Superpone un mini gráfico del último minuto de tráfico sobre el medidor</string>
+    <string name="desc_auto_start_on_boot">Inicia el servicio automáticamente al encender el dispositivo. Cuando la pantalla se apaga, el servicio se pausa automáticamente para ahorrar batería.</string>
+
+    <string name="preview_hint">Arrastra el deslizador o toca una muestra para inyectar un valor de previsualización en la superposición</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Te damos la bienvenida a DataStats</string>
+    <string name="onboarding_intro">DataStats muestra un medidor de velocidad de red en tiempo real como superposición en tu pantalla. Concede los siguientes permisos para que la app funcione correctamente.</string>
+    <string name="onboarding_step_overlay_title">1. Mostrar sobre otras apps</string>
+    <string name="onboarding_step_overlay_desc">Necesario para mostrar el medidor sobre otras apps.</string>
+    <string name="onboarding_step_notification_title">2. Notificaciones</string>
+    <string name="onboarding_step_notification_desc">Necesario para la notificación residente que permite mostrar u ocultar la superposición rápidamente.</string>
+    <string name="onboarding_step_battery_title">3. Ignorar optimización de batería (opcional)</string>
+    <string name="onboarding_step_battery_desc">Recomendado para que los ahorros de energía agresivos del fabricante no cierren el servicio en segundo plano.</string>
+    <string name="onboarding_grant">Conceder</string>
+    <string name="onboarding_configure">Configurar</string>
+    <string name="onboarding_granted">Concedido</string>
+    <string name="onboarding_start">Comenzar</string>
+    <string name="onboarding_required_missing">Concede los permisos requeridos indicados arriba.</string>
+
+</resources>
