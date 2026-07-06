@@ -40,7 +40,7 @@
     <string name="desc_bar_max_kb">Maximum speed represented by the full bar</string>
     <string name="desc_logarithm_bar">Display the bar on a logarithmic scale</string>
     <string name="desc_hide_when_in_fullscreen">Automatically hide while a fullscreen app is running</string>
-    <string name="desc_interval">Overlay refresh interval</string>
+    <string name="desc_interval">Overlay refresh interval. The service automatically pauses while the screen is off, so a longer interval saves battery only while the screen is on.</string>
     <string name="desc_interpolate">Smoothly animate between samples (higher battery usage)</string>
     <string name="desc_sparkline">Overlay a mini graph of the last minute\'s traffic on the meter</string>
     <string name="desc_auto_start_on_boot">Start the service automatically when the device boots. When the screen turns off the service automatically pauses to save battery.</string>

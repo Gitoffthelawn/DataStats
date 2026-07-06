@@ -40,7 +40,7 @@
     <string name="desc_bar_max_kb">バーが振り切れる速度の上限</string>
     <string name="desc_logarithm_bar">バーの目盛りを対数スケールで表示</string>
     <string name="desc_hide_when_in_fullscreen">フルスクリーンアプリの起動中は自動的に非表示</string>
-    <string name="desc_interval">オーバーレイの更新周期</string>
+    <string name="desc_interval">オーバーレイの更新周期。画面 OFF 中はサービスを自動停止するため、長い間隔で節約されるのは画面 ON 中のみです。</string>
     <string name="desc_interpolate">サンプル間を滑らかに補間します(バッテリ消費が増えます)</string>
     <string name="desc_sparkline">直近 1 分の速度履歴を小さなグラフとしてオーバーレイに重ねて表示</string>
     <string name="desc_auto_start_on_boot">端末起動時にサービスを自動起動します。画面 OFF 中は自動停止しバッテリを節約します。</string>

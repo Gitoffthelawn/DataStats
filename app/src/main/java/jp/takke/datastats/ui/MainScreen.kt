@@ -87,7 +87,7 @@ data class MainScreenCallbacks(
   val onToggleDebug: () -> Unit = {},
 )
 
-private val INTERVAL_OPTIONS = intArrayOf(500, 1000, 1500, 2000)
+private val INTERVAL_OPTIONS = intArrayOf(500, 1000, 1500, 2000, 5000, 10000)
 private val BAR_MAX_OPTIONS = intArrayOf(10, 50, 100, 500, 1024, 2048, 5120, 10240)
 private val SAMPLE_KB = intArrayOf(1, 20, 50, 80, 100)
 

@@ -5,6 +5,7 @@ v3.1.0 (2026.07.xx)
 -------------------
 
 - Fix: hide-when-fullscreen now works reliably on Android 11+ (especially Android 14)
+- Feature: add 5 sec / 10 sec update interval options for battery-conscious users; the interval description now clarifies that the service auto-pauses while the screen is off
 - Fix: overlay X position stayed anchored to the old screen width after rotation; the service now re-applies the WindowManager LayoutParams and invalidates its cached layout on configuration change / overlay resize
 - Feature: optional sparkline overlay showing the last ~60 seconds of upload/download traffic on top of the meter (toggle in Display section)
 - Perf: cache updateWidgetSize inputs to skip layout / getIdentifier calls when nothing changed each second
