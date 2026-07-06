@@ -4,12 +4,25 @@ kotlinVersion = "2.4.0"
 androidXCoreVersion = "1.19.0"
 appcompatVersion = "1.7.1"
 preferenceVersion = "1.2.1"
+materialVersion = "1.14.0"
+# Compose
+activityComposeVersion = "1.13.0"
+composeBomVersion = "2026.06.01"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidXCoreVersion" }
 androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceVersion" }
+material = { module = "com.google.android.material:material", version.ref = "materialVersion" }
 kotlin-stdlib-jdk7 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk7", version.ref = "kotlinVersion" }
+# Compose
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 
 [plugins]
-
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlinVersion" }

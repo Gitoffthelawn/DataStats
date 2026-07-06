@@ -27,4 +27,22 @@
     <string name="resident_notification">常駐通知</string>
     <string name="require_notification_permission">通知の権限が必要です</string>
 
+    <!-- セクション見出し -->
+    <string name="section_display">表示</string>
+    <string name="section_behavior">動作</string>
+    <string name="section_startup">起動</string>
+
+    <!-- 設定項目の説明 -->
+    <string name="desc_text_size">オーバーレイに表示する文字の大きさ</string>
+    <string name="desc_pos">オーバーレイを表示する水平方向の位置</string>
+    <string name="desc_unit_type">速度表示の単位を選択します</string>
+    <string name="desc_bar_max_kb">バーが振り切れる速度の上限</string>
+    <string name="desc_logarithm_bar">バーの目盛りを対数スケールで表示</string>
+    <string name="desc_hide_when_in_fullscreen">フルスクリーンアプリの起動中は自動的に非表示</string>
+    <string name="desc_interval">オーバーレイの更新周期</string>
+    <string name="desc_interpolate">サンプル間を滑らかに補間します(バッテリ消費が増えます)</string>
+    <string name="desc_auto_start_on_boot">端末起動時にサービスを自動起動します。画面 OFF 中は自動停止しバッテリを節約します。</string>
+
+    <string name="preview_hint">スライダーやサンプルボタンでオーバーレイにプレビュー値を注入します</string>
+
 </resources>

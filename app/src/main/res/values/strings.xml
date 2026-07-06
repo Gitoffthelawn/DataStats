@@ -27,4 +27,22 @@
     <string name="resident_notification">Resident</string>
     <string name="require_notification_permission">Require notification permission</string>
 
+    <!-- Section headers -->
+    <string name="section_display">Display</string>
+    <string name="section_behavior">Behavior</string>
+    <string name="section_startup">Startup</string>
+
+    <!-- Setting descriptions -->
+    <string name="desc_text_size">Font size of the overlay text</string>
+    <string name="desc_pos">Horizontal position of the overlay</string>
+    <string name="desc_unit_type">Choose the unit for the speed display</string>
+    <string name="desc_bar_max_kb">Maximum speed represented by the full bar</string>
+    <string name="desc_logarithm_bar">Display the bar on a logarithmic scale</string>
+    <string name="desc_hide_when_in_fullscreen">Automatically hide while a fullscreen app is running</string>
+    <string name="desc_interval">Overlay refresh interval</string>
+    <string name="desc_interpolate">Smoothly animate between samples (higher battery usage)</string>
+    <string name="desc_auto_start_on_boot">Start the service automatically when the device boots. When the screen turns off the service automatically pauses to save battery.</string>
+
+    <string name="preview_hint">Drag the slider or tap a sample to inject a preview value into the overlay</string>
+
 </resources>

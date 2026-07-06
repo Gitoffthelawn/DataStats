@@ -4,6 +4,7 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- UI: revamp the settings screen with Jetpack Compose + Material 3 (DayNight, Material You dynamic colors), grouped into Display / Behavior / Startup sections with per-setting descriptions
 - Refactor: route force-redraw requests through AIDL (ILayerService.forceRedraw) instead of Activity poking the SurfaceView static
 - Fix: dispatch onScreenOff to the main thread from the gather worker to avoid races on state flags and handler registration
 - Fix: interrupt the gather thread on stop to avoid blocking the main thread up to the update interval (potential ANR)

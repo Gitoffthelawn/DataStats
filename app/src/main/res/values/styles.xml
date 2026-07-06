@@ -1,8 +1,7 @@
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <!-- Customize your theme here. -->
-    </style>
+    <!-- Base application theme (Material 3 / DayNight). -->
+    <!-- ActionBar は Compose 側で TopAppBar を使うため NoActionBar を採用 -->
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar" />
 
 </resources>
