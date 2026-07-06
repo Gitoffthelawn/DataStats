@@ -22,6 +22,7 @@ import android.os.SystemClock
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.os.postDelayed
@@ -39,6 +40,22 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   private var mView: MyRelativeLayout? = null
   private var mWindowManager: WindowManager? = null
   private var mOverlayLayoutParams: WindowManager.LayoutParams? = null
+
+  /**
+   * 全画面判定用のダミーオーバーレイ。
+   * 意図的に `FLAG_LAYOUT_IN_SCREEN` を付けずに WindowManager に追加することで、
+   * ステータスバーやナビゲーションバーの表示状態に応じて位置と描画サイズが変化する。
+   * `getLocationOnScreen()[1]` が 0 = ステータスバー領域がない = 全画面(イマーシブ)。
+   *
+   * `TYPE_APPLICATION_OVERLAY` の `rootWindowInsets` が他アプリの immersive 切替を
+   * 反映しない Android 14 の実機に対して、確実に検出するために利用する。
+   */
+  private var mFullScreenDetectorView: View? = null
+
+  // ユーザが「表示中」を望んでいるか(通知の Show/Hide ボタンで切り替え)。
+  // このフラグと「全画面時の一時非表示」を組み合わせて mView.visibility を決定する。
+  private var mUserWantsVisible = true
+
   @Volatile
   private var mAttached = false
 
@@ -397,6 +414,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     // 全画面状態の変化を次回の更新タイミングを待たず即座に表示へ反映する
     mView?.onFullScreenChangedListener = {
+      applyOverlayVisibility()
       showTraffic()
     }
 
@@ -412,6 +430,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     // Viewを画面上に重ね合わせする
     mWindowManager?.addView(mView, params)
+
+    // 全画面判定用のダミー窓を追加(FLAG_LAYOUT_IN_SCREEN なし)
+    addFullScreenDetectorView()
 
     // スリープ状態のレシーバ登録
     applicationContext.registerReceiver(mReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
@@ -458,21 +479,22 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     //--------------------------------------------------
     if (action != null) {
       when (action) {
-        "show" ->
-          // OverlayView表示
-          mView?.visibility = View.VISIBLE
+        "show" -> {
+          mUserWantsVisible = true
+          applyOverlayVisibility()
+        }
 
-        "hide" ->
-          // OverlayView非表示
-          mView?.visibility = View.GONE
+        "hide" -> {
+          mUserWantsVisible = false
+          applyOverlayVisibility()
+        }
 
         "hide_and_resume" -> {
-          // OverlayView非表示 -> 10秒後に復帰
-          mView?.visibility = View.GONE
+          mUserWantsVisible = false
+          applyOverlayVisibility()
           mHandler.postDelayed(10000L) {
-            mView?.visibility = View.VISIBLE
-
-            // 通知(ボタン変更)
+            mUserWantsVisible = true
+            applyOverlayVisibility()
             showNotification()
           }
           Toast.makeText(
@@ -499,7 +521,30 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   }
 
   private fun showNotification() {
-    mNotificationPresenter.showNotification(mView == null || mView?.visibility == View.VISIBLE)
+    // 通知のボタン(Show/Hide)はユーザ意図に従う。全画面による一時非表示は反映しない。
+    mNotificationPresenter.showNotification(mUserWantsVisible)
+  }
+
+  /**
+   * ユーザ意図(Show/Hide)と全画面判定(hideWhenInFullscreen)から
+   * オーバーレイの表示/非表示を確定する。
+   *
+   * Android 14 では `mySurfaceView.visibility = GONE` だけでは描画残りが起きるケースが
+   * あるため、親の `mView.visibility` 自体を切り替える方針とする。
+   */
+  private fun applyOverlayVisibility() {
+    val view = mView ?: return
+    val hidingByFullscreen =
+      Config.hideWhenInFullscreen && (view.isFullScreen || isFullScreenViaDetector())
+    val target = if (mUserWantsVisible && !hidingByFullscreen) View.VISIBLE else View.GONE
+    if (view.visibility != target) {
+      MyLog.d {
+        "applyOverlayVisibility: " +
+                (if (target == View.VISIBLE) "VISIBLE" else "GONE") +
+                " (userWants=$mUserWantsVisible, hidingByFullscreen=$hidingByFullscreen)"
+      }
+      view.visibility = target
+    }
   }
 
   private fun showTraffic() {
@@ -554,7 +599,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     val screenWidth = view.width
     val xPos = Config.xPos
     val hideInFullscreen = Config.hideWhenInFullscreen
-    val inFullScreen = view.isFullScreen
+    // WindowInsets ベースの判定(MyRelativeLayout)とダミー窓ベースの判定(detector)を
+    // どちらか true なら全画面とみなす。Android 14 では前者が更新されないことがあるため二重化。
+    val inFullScreen = view.isFullScreen || isFullScreenViaDetector()
 
     // 依存する値がすべて前回と同じなら再計算・レイアウト適用をスキップする
     // (毎秒 showTraffic() から呼ばれるため、getIdentifier / setLayoutParams / setPadding の
@@ -581,8 +628,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     //--------------------------------------------------
     // hide when in fullscreen
     //--------------------------------------------------
-    mySurfaceView.visibility =
-      if (hideInFullscreen && inFullScreen) View.GONE else View.VISIBLE
+    // 実際の visibility 切替は applyOverlayVisibility() 側で mView 単位に一元管理する。
+    // (Android 14 では SurfaceView 単体の visibility=GONE では消えないケースがあるため)
+    applyOverlayVisibility()
 
     //--------------------------------------------------
     // set widget width
@@ -614,6 +662,97 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mCachedStatusBarHeight =
       if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
     return mCachedStatusBarHeight
+  }
+
+  /**
+   * 全画面判定用のダミーオーバーレイを WindowManager に追加する。
+   * MATCH_PARENT サイズにして `setFitInsetsTypes(status+nav)` + `setFitInsetsIgnoringVisibility(false)`
+   * を指定することで、system bars 可視時はそれらを避けたサイズに縮み、非表示時は full display 相当に広がる。
+   * 描画された view の高さと実ディスプレイの高さを比較して全画面を判定する。
+   */
+  @SuppressLint("InflateParams")
+  private fun addFullScreenDetectorView() {
+    val wm = mWindowManager ?: return
+    if (mFullScreenDetectorView != null) return
+
+    val params = WindowManager.LayoutParams(
+      WindowManager.LayoutParams.MATCH_PARENT,
+      WindowManager.LayoutParams.MATCH_PARENT,
+      myLayerType,
+      // 重要: FLAG_LAYOUT_IN_SCREEN を意図的に付けない
+      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+              or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+              or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+      PixelFormat.TRANSPARENT,
+    )
+    params.gravity = Gravity.TOP or Gravity.LEFT
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      params.alpha = 0f
+    }
+    // API 30+: system bars の "現在の可視状態" にウィンドウサイズを追従させる
+    // (setFitInsetsIgnoringVisibility(false) が肝: 可視時のみ避ける = 全画面時は広がる)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      params.fitInsetsTypes =
+        WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
+      params.isFitInsetsIgnoringVisibility = false
+    }
+
+    val detector = View(this)
+    // サイズが変化したら(≒ system bars 状態が変わったら)即描画を反映する
+    detector.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+      val h = bottom - top
+      val oldH = oldBottom - oldTop
+      if (h != oldH) {
+        MyLog.d { "FullScreenDetector: layout height=$h (old=$oldH), full=${isFullScreenViaDetector()}" }
+        mLayoutCached = false
+        applyOverlayVisibility()
+        showTraffic()
+      }
+    }
+    mFullScreenDetectorView = detector
+
+    try {
+      wm.addView(detector, params)
+    } catch (e: Exception) {
+      MyLog.e(e)
+      mFullScreenDetectorView = null
+    }
+  }
+
+  private fun removeFullScreenDetectorView() {
+    val v = mFullScreenDetectorView ?: return
+    try {
+      mWindowManager?.removeView(v)
+    } catch (e: Exception) {
+      MyLog.e(e)
+    }
+    mFullScreenDetectorView = null
+  }
+
+  /**
+   * ダミー窓の高さと実ディスプレイの高さを比較して全画面判定する。
+   * 完全一致 = system bars を挟まずに描画されている = 全画面(イマーシブ)。
+   * ダミー窓がまだ addView 直後で layout 未完了(未 attach / height 0)の場合は false を返す。
+   */
+  private fun isFullScreenViaDetector(): Boolean {
+    val v = mFullScreenDetectorView ?: return false
+    if (!v.isAttachedToWindow) return false
+    val detectorHeight = v.height
+    if (detectorHeight <= 0) return false
+    val realHeight = getDisplayRealHeight()
+    return detectorHeight >= realHeight
+  }
+
+  @Suppress("DEPRECATION")
+  private fun getDisplayRealHeight(): Int {
+    val wm = mWindowManager ?: return 0
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      wm.maximumWindowMetrics.bounds.height()
+    } else {
+      val point = android.graphics.Point()
+      wm.defaultDisplay.getRealSize(point)
+      point.y
+    }
   }
 
   private fun convertBytesToPerThousand(bytes: Long): Int {
@@ -759,6 +898,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
       mView?.removeOnAttachStateChangeListener(this)
 
+      // 全画面検出用ダミー窓の解放
+      removeFullScreenDetectorView()
+
       // サービスが破棄されるときには重ね合わせしていたViewを削除する
       mWindowManager?.removeView(mView)
     }
@@ -769,7 +911,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mAttached = true
 
     MyLog.d("LayerService.onViewAttachedToWindow")
-    mView?.visibility = View.VISIBLE
+    // attach 完了後、ユーザ意図と全画面状態から visibility を確定する
+    applyOverlayVisibility()
   }
 
   override fun onViewDetachedFromWindow(v: View) {

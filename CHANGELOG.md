@@ -4,6 +4,7 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- Fix: hide-when-fullscreen now works reliably on Android 11+ (especially Android 14)
 - Fix: overlay X position stayed anchored to the old screen width after rotation; the service now re-applies the WindowManager LayoutParams and invalidates its cached layout on configuration change / overlay resize
 - Feature: optional sparkline overlay showing the last ~60 seconds of upload/download traffic on top of the meter (toggle in Display section)
 - Perf: cache updateWidgetSize inputs to skip layout / getIdentifier calls when nothing changed each second
@@ -11,7 +12,6 @@ v3.1.0 (2026.07.xx)
 - Perf: MyLog.d { ... } inline lambda overload skips string concatenation when debug logging is disabled
 - Perf: replace 3-point Lagrange interpolation with 2-point linear interpolation (removes DoubleArray allocation and overshoot guards)
 - Cleanup: migrate the remaining Java sources (Config, C, MyLog, IOUtil, TkConfig, TkConsts) to Kotlin; the project is now 100% Kotlin
-- Fix: fullscreen detection on Android 11+ by switching to WindowInsets (status bar visibility); the legacy size-based detection no longer works with TYPE_APPLICATION_OVERLAY
 - UI: first-launch onboarding screen explaining why the overlay / notification / battery-optimization settings are needed; the resident service is turned on by default when onboarding completes
 - UI: revamp the settings screen with Jetpack Compose + Material 3 (DayNight, Material You dynamic colors), grouped into Display / Behavior / Startup sections with per-setting descriptions
 - Refactor: route force-redraw requests through AIDL (ILayerService.forceRedraw) instead of Activity poking the SurfaceView static
