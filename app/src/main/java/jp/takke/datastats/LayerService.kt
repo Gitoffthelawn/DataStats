@@ -355,11 +355,14 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     val action = intent?.action
     MyLog.d("LayerService.onStartCommand flags[$flags] startId[$startId] intent.action[$action]")
 
+    // 通知チャンネルは startForegroundService の 5 秒ルール対応で
+    // 最初の startForeground より前に必ず作成する(action 有無どちらの経路でも)
+    mNotificationPresenter.createNotificationChannel()
+
     // オーバーレイ権限がない状態(BootReceiver経由等)で起動された場合は
     // 何もせず自身を停止する。FGS の 5 秒ルールを満たすため一度だけ startForeground してから終了する。
     if (!mHasOverlayPermission) {
       MyLog.w("LayerService.onStartCommand: no overlay permission -> stopSelf")
-      mNotificationPresenter.createNotificationChannel()
       showNotification()
       mNotificationPresenter.hideNotification()
       stopSelf()
@@ -408,7 +411,6 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     }
 
     // 通知(常駐)
-    mNotificationPresenter.createNotificationChannel()
     showNotification()
 
     // Alarmループ続行
