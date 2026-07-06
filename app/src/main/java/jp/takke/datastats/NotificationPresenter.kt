@@ -11,6 +11,7 @@ import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import jp.takke.util.MyLog
 import jp.takke.util.TkUtil
 import java.lang.ref.WeakReference
@@ -141,8 +142,9 @@ internal class NotificationPresenter(service: Service) {
 
     val service = mServiceRef.get() ?: return
 
-    val nm = service.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    nm.cancel(MY_NOTIFICATION_ID)
+    // startForeground() で表示した通知は NotificationManager.cancel() では消えないため、
+    // stopForeground(STOP_FOREGROUND_REMOVE) を使う
+    ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_REMOVE)
   }
 
   companion object {

@@ -4,6 +4,8 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- Fix: keep the notification during screen off (previously the foreground notification could not be dismissed by cancel())
+- Add @Volatile to shared thread flags to fix memory visibility issues
 - compileSdkVersion 36 -> 37
 - Java 8 -> 11
 - Update library

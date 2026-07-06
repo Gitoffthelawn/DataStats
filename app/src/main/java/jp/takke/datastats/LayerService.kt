@@ -115,7 +115,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       Config.loadPreferences(this@LayerService)
 
       // 通知(常駐)
-      mNotificationPresenter.hideNotification()
+      // ※ startForeground は再度呼んでも通知を更新するのでhide不要
       showNotification()
 
       // Alarmループ開始
@@ -236,8 +236,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       // 通信量取得スレッド停止
       stopGatherThread()
 
-      // 通知終了(常駐解除)
-      mNotificationPresenter.hideNotification()
+      // 通知は残したままにする(startForegroundで表示している通知はcancelでは消えないため、
+      // 画面OFF中はスレッドだけ止めて通知は維持する)
 
       // アラーム停止
       stopAlarm()
