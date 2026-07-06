@@ -131,7 +131,18 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
         startGatherThread()
       }
 
-      showTraffic()
+      // 補間モード等の Config 反映(Interpolate ON/OFF を即時反映するため)
+      val mySurfaceView = mView?.findViewById<MySurfaceView>(R.id.mySurfaceView)
+      mySurfaceView?.applyInterpolationConfig()
+
+      // 補間モードでは setTraffic の直接描画がスキップされるため、
+      // 切替直後の 1 フレームを sForceRedraw で強制的に描画する
+      MySurfaceView.sForceRedraw = true
+      try {
+        showTraffic()
+      } finally {
+        MySurfaceView.sForceRedraw = false
+      }
     }
 
     @Throws(RemoteException::class)

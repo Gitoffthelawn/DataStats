@@ -257,8 +257,8 @@ class MainActivity : ComponentActivity() {
     onInterpolateChange = { checked ->
       savePref { putBoolean(C.PREF_KEY_INTERPOLATE_MODE, checked) }
       mUiState = mUiState.copy(interpolateMode = checked)
-      // Surface を作り直すため一度停止してから再起動
-      doStopService()
+      // サービス再起動時に MySurfaceView.applyInterpolationConfig() が呼ばれるので
+      // Surface を作り直す必要はなく、restart のみで即座に反映される
       doRestartService()
     },
     onTextSizeDelta = { delta -> updateTextSize(delta) },

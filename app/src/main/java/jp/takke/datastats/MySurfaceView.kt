@@ -483,6 +483,19 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     }
   }
 
+  /**
+   * 現在の Config に合わせて補間スレッドの起動 / 停止を切り替える。
+   * 設定 UI で Interpolate を ON/OFF した直後にも呼び、
+   * サービス再起動を待たずに描画スレッドを即座に反映する。
+   */
+  fun applyInterpolationConfig() {
+    if (Config.interpolateMode && Config.logBar) {
+      startThread()
+    } else {
+      stopThread()
+    }
+  }
+
   private fun stopThread() {
 
     if (mThreadActive && mThread != null) {
