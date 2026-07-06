@@ -55,6 +55,8 @@ data class ConfigUiState(
   val logBar: Boolean = true,
   val interpolateMode: Boolean = false,
   val sparklineMode: Boolean = false,
+  val showOnlyOnMobile: Boolean = false,
+  val mobileOnlyMeter: Boolean = false,
   val textSizeSp: Int = 10,
   val xPos: Int = 100,
   val intervalMs: Int = 1000,
@@ -80,6 +82,8 @@ data class MainScreenCallbacks(
   val onLogBarChange: (Boolean) -> Unit = {},
   val onInterpolateChange: (Boolean) -> Unit = {},
   val onSparklineChange: (Boolean) -> Unit = {},
+  val onShowOnlyOnMobileChange: (Boolean) -> Unit = {},
+  val onMobileOnlyMeterChange: (Boolean) -> Unit = {},
   val onTextSizeDelta: (Int) -> Unit = {},
   val onXPosChange: (Int) -> Unit = {},
   val onIntervalChange: (Int) -> Unit = {},
@@ -296,6 +300,24 @@ private fun BehaviorSection(state: ConfigUiState, callbacks: MainScreenCallbacks
       checked = state.interpolateMode,
       enabled = state.logBar,
       onCheckedChange = callbacks.onInterpolateChange,
+    )
+    RowDivider()
+
+    // Show only when on mobile network
+    SwitchRow(
+      title = stringResource(R.string.config_show_only_on_mobile),
+      description = stringResource(R.string.desc_show_only_on_mobile),
+      checked = state.showOnlyOnMobile,
+      onCheckedChange = callbacks.onShowOnlyOnMobileChange,
+    )
+    RowDivider()
+
+    // Measure mobile traffic only
+    SwitchRow(
+      title = stringResource(R.string.config_mobile_only_meter),
+      description = stringResource(R.string.desc_mobile_only_meter),
+      checked = state.mobileOnlyMeter,
+      onCheckedChange = callbacks.onMobileOnlyMeterChange,
     )
   }
 }

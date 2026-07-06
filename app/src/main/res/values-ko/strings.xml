@@ -18,6 +18,8 @@
     <string name="config_logarithm_bar">로그 스케일 바</string>
     <string name="config_interpolate">보간 모드(배터리 소모 주의)</string>
     <string name="config_sparkline">속도 이력 스파크라인</string>
+    <string name="config_show_only_on_mobile">모바일 데이터일 때만 표시</string>
+    <string name="config_mobile_only_meter">모바일 통신량만 측정</string>
 
     <string name="preview">미리보기</string>
     <string name="resident_service_running">DataStats 서비스 실행 중</string>
@@ -43,6 +45,8 @@
     <string name="desc_interval">오버레이 갱신 주기. 화면이 꺼져 있는 동안 서비스는 자동으로 일시 정지되므로, 긴 간격은 화면이 켜져 있을 때만 배터리를 절약합니다.</string>
     <string name="desc_interpolate">샘플 사이를 부드럽게 애니메이션 (배터리 소모 증가)</string>
     <string name="desc_sparkline">최근 1분간의 트래픽을 미니 그래프로 오버레이에 겹쳐 표시</string>
+    <string name="desc_show_only_on_mobile">모바일 데이터 연결일 때만 미터를 표시합니다(Wi-Fi / 이더넷 / VPN 은 비모바일로 취급).</string>
+    <string name="desc_mobile_only_meter">Wi-Fi 를 제외하고 모바일 통신량만 측정합니다. 종량제 회선의 사용량을 파악하는 데 유용합니다.</string>
     <string name="desc_auto_start_on_boot">기기 부팅 시 서비스를 자동으로 시작합니다. 화면이 꺼지면 배터리 절약을 위해 서비스가 자동으로 일시 정지됩니다.</string>
 
     <string name="preview_hint">슬라이더를 드래그하거나 샘플을 눌러 오버레이에 미리보기 값을 주입합니다</string>

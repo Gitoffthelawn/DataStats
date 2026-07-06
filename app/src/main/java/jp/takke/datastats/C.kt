@@ -12,6 +12,8 @@ object C {
   const val PREF_KEY_TEXT_SIZE_SP = "textSizeSp"
   const val PREF_KEY_UNIT_TYPE_BPS = "unitTypeBps"
   const val PREF_KEY_SPARKLINE_MODE = "sparklineMode"
+  const val PREF_KEY_SHOW_ONLY_ON_MOBILE = "showOnlyOnMobile"
+  const val PREF_KEY_MOBILE_ONLY_METER = "mobileOnlyMeter"
   const val PREF_KEY_ONBOARDING_DONE = "onboardingDone"
 
   // ユーザが「オーバーレイ表示」を望んでいるか(通知ボタン / QS タイルで切替)。

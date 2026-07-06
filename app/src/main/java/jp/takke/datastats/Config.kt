@@ -25,6 +25,12 @@ object Config {
   /** 直近履歴のスパークライン(ミニグラフ)をオーバーレイに重ねて描画するかどうか */
   var sparklineMode: Boolean = false
 
+  /** モバイルデータ通信中のみオーバーレイを表示する */
+  var showOnlyOnMobile: Boolean = false
+
+  /** 総トラフィックではなくモバイル通信量のみを計測する */
+  var mobileOnlyMeter: Boolean = false
+
   var textSizeSp: Int = C.DEFAULT_TEXT_SIZE_SP
 
 
@@ -42,6 +48,8 @@ object Config {
     hideWhenInFullscreen = pref.getBoolean(C.PREF_KEY_HIDE_WHEN_IN_FULLSCREEN, true)
     interpolateMode = pref.getBoolean(C.PREF_KEY_INTERPOLATE_MODE, false)
     sparklineMode = pref.getBoolean(C.PREF_KEY_SPARKLINE_MODE, false)
+    showOnlyOnMobile = pref.getBoolean(C.PREF_KEY_SHOW_ONLY_ON_MOBILE, false)
+    mobileOnlyMeter = pref.getBoolean(C.PREF_KEY_MOBILE_ONLY_METER, false)
     textSizeSp = pref.getInt(C.PREF_KEY_TEXT_SIZE_SP, C.DEFAULT_TEXT_SIZE_SP)
 
     // 文字色変更基準の再計算

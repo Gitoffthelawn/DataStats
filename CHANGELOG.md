@@ -8,6 +8,7 @@ v4.0.0 (2026.07.xx)
 - Feature: add 5 sec / 10 sec update interval options for battery-conscious users; the interval description now clarifies that the service auto-pauses while the screen is off
 - UI: preview area now defaults to a live traffic display showing the current upload/download speed; the classic slider/sample-button injection UI is still available via a toggle
 - Feature: Quick Settings tile to toggle the overlay on/off from the notification shade
+- Feature: "Show only on mobile network" and "Mobile-only measurement" options for users on metered data plans (Wi-Fi / Ethernet / VPN are treated as non-mobile)
 - i18n: add Simplified Chinese (zh-rCN), Korean (ko) and Spanish (es) translations
 - Fix: overlay X position stayed anchored to the old screen width after rotation; the service now re-applies the WindowManager LayoutParams and invalidates its cached layout on configuration change / overlay resize
 - Feature: optional sparkline overlay showing the last ~60 seconds of upload/download traffic on top of the meter (toggle in Display section)

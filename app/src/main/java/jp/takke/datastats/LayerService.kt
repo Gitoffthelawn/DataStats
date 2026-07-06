@@ -52,6 +52,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
    */
   private var mFullScreenDetectorView: View? = null
 
+  // 現在のデフォルトネットワーク種別モニタ(mobileOnlyMeter / showOnlyOnMobile 用)
+  private var mNetworkMonitor: NetworkTypeMonitor? = null
+
   // ユーザが「表示中」を望んでいるか(通知の Show/Hide ボタンで切り替え)。
   // このフラグと「全画面時の一時非表示」を組み合わせて mView.visibility を決定する。
   private var mUserWantsVisible = true
@@ -440,6 +443,17 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     // 全画面判定用のダミー窓を追加(FLAG_LAYOUT_IN_SCREEN なし)
     addFullScreenDetectorView()
 
+    // デフォルトネットワーク種別モニタ起動
+    // (showOnlyOnMobile の可視性判定、および mobileOnlyMeter モードの切替時反映のため)
+    mNetworkMonitor = NetworkTypeMonitor(this).apply {
+      onChangedListener = {
+        // ネットワーク遷移で応答すべきは可視性(showOnlyOnMobile)
+        // callback は非メインスレッドの可能性があるので main に post する
+        mHandler.post { applyOverlayVisibility() }
+      }
+      start()
+    }
+
     // スリープ状態のレシーバ登録
     applicationContext.registerReceiver(mReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
     applicationContext.registerReceiver(mReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
@@ -549,12 +563,18 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     val view = mView ?: return
     val hidingByFullscreen =
       Config.hideWhenInFullscreen && (view.isFullScreen || isFullScreenViaDetector())
-    val target = if (mUserWantsVisible && !hidingByFullscreen) View.VISIBLE else View.GONE
+    // showOnlyOnMobile: 現在の接続がモバイル以外なら非表示にする(VPN 経由も非モバイル扱い)
+    val hidingByNonMobile =
+      Config.showOnlyOnMobile &&
+              mNetworkMonitor?.currentType != NetworkTypeMonitor.NetworkType.MOBILE
+    val target =
+      if (mUserWantsVisible && !hidingByFullscreen && !hidingByNonMobile) View.VISIBLE else View.GONE
     if (view.visibility != target) {
       MyLog.d {
         "applyOverlayVisibility: " +
                 (if (target == View.VISIBLE) "VISIBLE" else "GONE") +
-                " (userWants=$mUserWantsVisible, hidingByFullscreen=$hidingByFullscreen)"
+                " (userWants=$mUserWantsVisible, hidingByFullscreen=$hidingByFullscreen" +
+                ", hidingByNonMobile=$hidingByNonMobile)"
       }
       view.visibility = target
     }
@@ -792,8 +812,12 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   private fun gatherTraffic() {
 
-    val totalRxBytes = TrafficStats.getTotalRxBytes()
-    val totalTxBytes = TrafficStats.getTotalTxBytes()
+    // モバイル通信量のみを計測するモード。TrafficStats.getMobileXxxBytes() は
+    // モバイル回線分の送受信バイト数を返す(Wi-Fi 分は含まない)
+    val totalRxBytes =
+      if (Config.mobileOnlyMeter) TrafficStats.getMobileRxBytes() else TrafficStats.getTotalRxBytes()
+    val totalTxBytes =
+      if (Config.mobileOnlyMeter) TrafficStats.getMobileTxBytes() else TrafficStats.getTotalTxBytes()
 
     // TrafficStats.UNSUPPORTED (-1) が返る端末では diff 計算ができないので 0 として扱う
     if (totalRxBytes == TrafficStats.UNSUPPORTED.toLong() ||
@@ -913,6 +937,10 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
       // 全画面検出用ダミー窓の解放
       removeFullScreenDetectorView()
+
+      // ネットワークモニタ解放
+      mNetworkMonitor?.stop()
+      mNetworkMonitor = null
 
       // サービスが破棄されるときには重ね合わせしていたViewを削除する
       mWindowManager?.removeView(mView)

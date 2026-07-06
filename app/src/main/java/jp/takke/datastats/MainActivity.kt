@@ -279,6 +279,8 @@ class MainActivity : ComponentActivity() {
       logBar = Config.logBar,
       interpolateMode = Config.interpolateMode,
       sparklineMode = Config.sparklineMode,
+      showOnlyOnMobile = Config.showOnlyOnMobile,
+      mobileOnlyMeter = Config.mobileOnlyMeter,
       textSizeSp = Config.textSizeSp,
       xPos = Config.xPos,
       intervalMs = Config.intervalMs,
@@ -315,6 +317,18 @@ class MainActivity : ComponentActivity() {
       savePref { putBoolean(C.PREF_KEY_SPARKLINE_MODE, checked) }
       mUiState = mUiState.copy(sparklineMode = checked)
       // 描画スレッドは restart で Config を読み直し、次フレームからスパークラインが反映される
+      doRestartService()
+    },
+    onShowOnlyOnMobileChange = { checked ->
+      savePref { putBoolean(C.PREF_KEY_SHOW_ONLY_ON_MOBILE, checked) }
+      mUiState = mUiState.copy(showOnlyOnMobile = checked)
+      // 現在のネットワーク種別と照らして即座に visibility を反映
+      doRestartService()
+    },
+    onMobileOnlyMeterChange = { checked ->
+      savePref { putBoolean(C.PREF_KEY_MOBILE_ONLY_METER, checked) }
+      mUiState = mUiState.copy(mobileOnlyMeter = checked)
+      // 次回 gatherTraffic からモバイル計測に切替
       doRestartService()
     },
     onTextSizeDelta = { delta -> updateTextSize(delta) },

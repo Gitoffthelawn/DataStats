@@ -18,6 +18,8 @@
     <string name="config_logarithm_bar">Logarithm bar</string>
     <string name="config_interpolate">Interpolate(notice battery life)</string>
     <string name="config_sparkline">Speed history sparkline</string>
+    <string name="config_show_only_on_mobile">Show only on mobile network</string>
+    <string name="config_mobile_only_meter">Mobile-only measurement</string>
 
     <string name="preview">Preview</string>
     <string name="resident_service_running">DataStats service running</string>
@@ -43,6 +45,8 @@
     <string name="desc_interval">Overlay refresh interval. The service automatically pauses while the screen is off, so a longer interval saves battery only while the screen is on.</string>
     <string name="desc_interpolate">Smoothly animate between samples (higher battery usage)</string>
     <string name="desc_sparkline">Overlay a mini graph of the last minute\'s traffic on the meter</string>
+    <string name="desc_show_only_on_mobile">Hide the meter unless the device is on a mobile data connection (Wi-Fi, Ethernet and VPN are treated as non-mobile).</string>
+    <string name="desc_mobile_only_meter">Measure only mobile data traffic (Wi-Fi is excluded). Useful for tracking metered connection usage.</string>
     <string name="desc_auto_start_on_boot">Start the service automatically when the device boots. When the screen turns off the service automatically pauses to save battery.</string>
 
     <string name="preview_hint">Drag the slider or tap a sample to inject a preview value into the overlay</string>

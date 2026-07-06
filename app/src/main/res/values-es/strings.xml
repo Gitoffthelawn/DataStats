@@ -18,6 +18,8 @@
     <string name="config_logarithm_bar">Barra logarítmica</string>
     <string name="config_interpolate">Interpolar (afecta la batería)</string>
     <string name="config_sparkline">Historial de velocidad</string>
+    <string name="config_show_only_on_mobile">Mostrar solo en red móvil</string>
+    <string name="config_mobile_only_meter">Medir solo el tráfico móvil</string>
 
     <string name="preview">Vista previa</string>
     <string name="resident_service_running">Servicio de DataStats en ejecución</string>
@@ -43,6 +45,8 @@
     <string name="desc_interval">Intervalo de actualización de la superposición. El servicio se pausa automáticamente con la pantalla apagada, por lo que un intervalo mayor solo ahorra batería con la pantalla encendida.</string>
     <string name="desc_interpolate">Anima suavemente entre muestras (más consumo de batería)</string>
     <string name="desc_sparkline">Superpone un mini gráfico del último minuto de tráfico sobre el medidor</string>
+    <string name="desc_show_only_on_mobile">Oculta el medidor a menos que el dispositivo esté usando datos móviles (Wi-Fi, Ethernet y VPN se tratan como no móvil).</string>
+    <string name="desc_mobile_only_meter">Mide solo el tráfico de datos móviles (excluye Wi-Fi). Útil para controlar el consumo de conexiones con tarifa por uso.</string>
     <string name="desc_auto_start_on_boot">Inicia el servicio automáticamente al encender el dispositivo. Cuando la pantalla se apaga, el servicio se pausa automáticamente para ahorrar batería.</string>
 
     <string name="preview_hint">Arrastra el deslizador o toca una muestra para inyectar un valor de previsualización en la superposición</string>

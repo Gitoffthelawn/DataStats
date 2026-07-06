@@ -18,6 +18,8 @@
     <string name="config_logarithm_bar">バーの対数表示</string>
     <string name="config_interpolate">補間モード(バッテリ消費量に注意)</string>
     <string name="config_sparkline">速度履歴のミニグラフ</string>
+    <string name="config_show_only_on_mobile">モバイル通信時のみ表示</string>
+    <string name="config_mobile_only_meter">モバイル通信量のみ計測</string>
 
     <string name="preview">プレビュー</string>
     <string name="resident_service_running">DataStatsサービスを実行中</string>
@@ -43,6 +45,8 @@
     <string name="desc_interval">オーバーレイの更新周期。画面 OFF 中はサービスを自動停止するため、長い間隔で節約されるのは画面 ON 中のみです。</string>
     <string name="desc_interpolate">サンプル間を滑らかに補間します(バッテリ消費が増えます)</string>
     <string name="desc_sparkline">直近 1 分の速度履歴を小さなグラフとしてオーバーレイに重ねて表示</string>
+    <string name="desc_show_only_on_mobile">モバイルデータ接続時のみメーターを表示します(Wi-Fi / イーサネット / VPN は非モバイル扱い)。</string>
+    <string name="desc_mobile_only_meter">Wi-Fi を除外し、モバイル通信量のみを計測します。従量制回線の使用量を把握したい場合に有用です。</string>
     <string name="desc_auto_start_on_boot">端末起動時にサービスを自動起動します。画面 OFF 中は自動停止しバッテリを節約します。</string>
 
     <string name="preview_hint">スライダーやサンプルボタンでオーバーレイにプレビュー値を注入します</string>
