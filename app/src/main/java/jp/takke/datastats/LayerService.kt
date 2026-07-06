@@ -67,6 +67,17 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   private var mSnapshot = false
   private var mSnapshotBytes: Long = 0
 
+  // updateWidgetSize のキャッシュ
+  // 依存する Config 値・画面幅・全画面状態が変わらない限り再計算をスキップして毎秒の負荷を減らす
+  private var mLayoutCached = false
+  private var mCachedTextSizeSp = -1
+  private var mCachedScaledDensity = 0f
+  private var mCachedScreenWidth = -1
+  private var mCachedXPos = -1
+  private var mCachedHideInFullscreen = false
+  private var mCachedInFullScreen = false
+  private var mCachedStatusBarHeight = -1
+
 
   // 通信量取得スレッド管理
   @Volatile
@@ -499,80 +510,75 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   private fun updateWidgetSize() {
 
-    val resources = resources
-    val displayMetrics = resources.displayMetrics
     val view = mView ?: return
+    val mySurfaceView = view.findViewById<View>(R.id.mySurfaceView) ?: return
+
+    val displayMetrics = resources.displayMetrics
+    val scaledDensity = displayMetrics.scaledDensity
+    val textSizeSp = Config.textSizeSp
+    val screenWidth = view.width
+    val xPos = Config.xPos
+    val hideInFullscreen = Config.hideWhenInFullscreen
+    val inFullScreen = view.isFullScreen
+
+    // 依存する値がすべて前回と同じなら再計算・レイアウト適用をスキップする
+    // (毎秒 showTraffic() から呼ばれるため、getIdentifier / setLayoutParams / setPadding の
+    //  再実行を避けるためのキャッシュ)
+    if (
+      mLayoutCached &&
+      textSizeSp == mCachedTextSizeSp &&
+      scaledDensity == mCachedScaledDensity &&
+      screenWidth == mCachedScreenWidth &&
+      xPos == mCachedXPos &&
+      hideInFullscreen == mCachedHideInFullscreen &&
+      inFullScreen == mCachedInFullScreen
+    ) {
+      return
+    }
+    mCachedTextSizeSp = textSizeSp
+    mCachedScaledDensity = scaledDensity
+    mCachedScreenWidth = screenWidth
+    mCachedXPos = xPos
+    mCachedHideInFullscreen = hideInFullscreen
+    mCachedInFullScreen = inFullScreen
+    mLayoutCached = true
 
     //--------------------------------------------------
     // hide when in fullscreen
     //--------------------------------------------------
-    val inFullScreen = view.isFullScreen
-    val mySurfaceView = view.findViewById<View>(R.id.mySurfaceView) ?: return
-    run {
-
-//            MyLog.d("LayerService.showTraffic: hide[" + Config.hideWhenInFullscreen + "], fullscreen[" + inFullScreen + "], " +
-//                    "[" + dim.left + "," + dim.top + "], view[" + dim.width() + "x" + dim.height() + "], " +
-//                    "system[" + displayMetrics.widthPixels + "x" + displayMetrics.heightPixels + "]"
-//            )
-
-      if (Config.hideWhenInFullscreen) {
-        if (inFullScreen) {
-          mySurfaceView.visibility = View.GONE
-        } else {
-          mySurfaceView.visibility = View.VISIBLE
-        }
-      } else {
-        mySurfaceView.visibility = View.VISIBLE
-      }
-    }
-
+    mySurfaceView.visibility =
+      if (hideInFullscreen && inFullScreen) View.GONE else View.VISIBLE
 
     //--------------------------------------------------
     // set widget width
     //--------------------------------------------------
-
-    val scaledDensity = displayMetrics.scaledDensity
-    val textSizeSp = Config.textSizeSp
-
     // width = (iconSize + textAreaWidth) * 2
     // iconSize = textSize+4
     // textAreaWidth = (textSize+2) * 6
     val widgetWidthSp = (textSizeSp + 4 + (textSizeSp + 2) * 6) * 2
-//        MyLog.d("LayerService.showTraffic: widgetWidth[" + widgetWidthSp + "sp]")
-
-
     val widgetWidth = (widgetWidthSp * scaledDensity).toInt()
 
-    run {
-      val params = mySurfaceView.layoutParams
-
-      params.width = widgetWidth
-
-      // height = textSize * 1.25
-      params.height = (textSizeSp * 1.25 * scaledDensity).toInt()
-
-      mySurfaceView.layoutParams = params
-    }
-
+    val params = mySurfaceView.layoutParams
+    params.width = widgetWidth
+    // height = textSize * 1.25
+    params.height = (textSizeSp * 1.25 * scaledDensity).toInt()
+    mySurfaceView.layoutParams = params
 
     //--------------------------------------------------
     // set padding (x pos)
     //--------------------------------------------------
-    run {
-      val screenWidth = view.width
+    val statusBarHeight = if (inFullScreen) 0 else getStatusBarHeightCached()
+    val right = (screenWidth - widgetWidth) * (100 - xPos) / 100
+    view.setPadding(0, statusBarHeight, right, 0)
+  }
 
-      var statusBarHeight = 0
-      if (!inFullScreen) {
-        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-        if (resourceId > 0) {
-          statusBarHeight = resources.getDimensionPixelSize(resourceId)
-        }
-      }
-
-      val right = (screenWidth - widgetWidth) * (100 - Config.xPos) / 100
-//            MyLog.d("LayerService.showTraffic: right-padding[" + right + "]")
-      view.setPadding(0, statusBarHeight, right, 0)
-    }
+  /** 端末のステータスバー高さ。実質不変なので初回のみ resource lookup する */
+  private fun getStatusBarHeightCached(): Int {
+    if (mCachedStatusBarHeight >= 0) return mCachedStatusBarHeight
+    val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+    mCachedStatusBarHeight =
+      if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
+    return mCachedStatusBarHeight
   }
 
   private fun convertBytesToPerThousand(bytes: Long): Int {

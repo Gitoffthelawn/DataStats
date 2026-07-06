@@ -4,6 +4,10 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- Perf: cache updateWidgetSize inputs to skip layout / getIdentifier calls when nothing changed each second
+- Perf: reuse Paint / Matrix / cached Resources values in MySurfaceView.myDrawFrame instead of per-frame allocation
+- Perf: MyLog.d { ... } inline lambda overload skips string concatenation when debug logging is disabled
+- Perf: replace 3-point Lagrange interpolation with 2-point linear interpolation (removes DoubleArray allocation and overshoot guards)
 - Cleanup: migrate the remaining Java sources (Config, C, MyLog, IOUtil, TkConfig, TkConsts) to Kotlin; the project is now 100% Kotlin
 - Fix: fullscreen detection on Android 11+ by switching to WindowInsets (status bar visibility); the legacy size-based detection no longer works with TYPE_APPLICATION_OVERLAY
 - UI: first-launch onboarding screen explaining why the overlay / notification / battery-optimization settings are needed; the resident service is turned on by default when onboarding completes

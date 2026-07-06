@@ -21,6 +21,18 @@ object MyLog {
     dumpToExternalLogFile(Log.DEBUG, msg)
   }
 
+  /**
+   * デバッグモード / エミュレータ時のみ msg ラムダを評価する。
+   * 非デバッグ時は文字列組み立てコストが完全に発生しないため、ホットパスから呼ぶ場合に有効。
+   *
+   * 使い方: MyLog.d { "value: $x" }
+   */
+  inline fun d(msg: () -> String) {
+    if (TkConfig.debugMode || TkUtil.isEmulator) {
+      d(msg())
+    }
+  }
+
   fun d(msg: String, th: Throwable) {
     if (TkConfig.debugMode || TkUtil.isEmulator) {
       Log.d(TkConsts.LOG_NAME, msg, th)

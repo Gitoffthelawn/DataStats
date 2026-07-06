@@ -43,6 +43,21 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
   private var mLastTx: Long = 0
   private var mLastRx: Long = 0
 
+  // 描画用オブジェクト(毎フレーム再生成すると GC 圧が大きいためフィールドで再利用)
+  private val mPaint = Paint()
+  private val mPaintUd = Paint()
+  private val mUploadMatrix = Matrix()
+  private val mDownloadMatrix = Matrix()
+
+  // Resources から取得する値のキャッシュ(不変)
+  private var mResCached = false
+  private var mBgColor = 0
+  private var mUploadBorderColor = 0
+  private var mDownloadBorderColor = 0
+  private var mPaddingRight = 0
+  private var mPaddingLeft = 0
+  private var mBarStrokeWidth = 0f
+
 
   private inner class Traffic(
     var time: Long,
@@ -202,24 +217,20 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     //--------------------------------------------------
     val canvas = mSurfaceHolder!!.lockCanvas() ?: return
 
-
-    //--------------------------------------------------
-    // clear background
-    //--------------------------------------------------
-    val paint = Paint()
     val resources = resources
+    ensureResourcesCached()
+    val paint = mPaint
 
     // clear
     canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
     // Background
-    canvas.drawColor(ResourcesCompat.getColor(resources, R.color.textBackgroundColor, null))
+    canvas.drawColor(mBgColor)
 
 
     //--------------------------------------------------
     // upload, download
     //--------------------------------------------------
-    val paddingRight = resources.getDimensionPixelSize(R.dimen.overlay_padding_right)
     val xDownloadStart = mScreenWidth / 2
 
     // upload gradient
@@ -230,9 +241,8 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     uploadDrawable!!.setBounds(0, 0, xUploadEnd, mScreenHeight)
     uploadDrawable!!.draw(canvas)
     if (pTx > 0) {
-      paint.color = ResourcesCompat.getColor(resources, R.color.uploadBorder, null)
-      paint.strokeWidth =
-        resources.getDimensionPixelSize(R.dimen.updown_bar_right_border_size).toFloat()
+      paint.color = mUploadBorderColor
+      paint.strokeWidth = mBarStrokeWidth
       canvas.drawLine(
         xUploadEnd.toFloat(),
         0f,
@@ -251,9 +261,8 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     downloadDrawable!!.setBounds(xDownloadStart, 0, xDownloadEnd, mScreenHeight)
     downloadDrawable!!.draw(canvas)
     if (pRx > 0) {
-      paint.color = ResourcesCompat.getColor(resources, R.color.downloadBorder, null)
-      paint.strokeWidth =
-        resources.getDimensionPixelSize(R.dimen.updown_bar_right_border_size).toFloat()
+      paint.color = mDownloadBorderColor
+      paint.strokeWidth = mBarStrokeWidth
       canvas.drawLine(
         xDownloadEnd.toFloat(),
         0f,
@@ -276,20 +285,17 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     paint.textSize = textSizePx
     canvas.drawText(
       getReadableUDText(tx),
-      (xDownloadStart - paddingRight).toFloat(),
+      (xDownloadStart - mPaddingRight).toFloat(),
       paint.textSize,
       paint
     )
 
     // download text
-    paint.typeface = Typeface.MONOSPACE
     paint.color = MyTrafficUtil.getTextColorByBytes(resources, rx)
     paint.setShadowLayer(1.5f, 1.5f, 1.5f, MyTrafficUtil.getTextShadowColorByBytes(resources, rx))
-    paint.textAlign = Paint.Align.RIGHT
-    paint.textSize = textSizePx
     canvas.drawText(
       getReadableUDText(rx),
-      (mScreenWidth - paddingRight).toFloat(),
+      (mScreenWidth - mPaddingRight).toFloat(),
       paint.textSize,
       paint
     )
@@ -297,30 +303,29 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     paint.shader = null
 
     // upload/download mark
-    val paintUd = Paint()
+    val paintUd = mPaintUd
     val udMarkSize = (textSizeSp + 2) * scaledDensity
-    val paddingLeft = resources.getDimensionPixelSize(R.dimen.overlay_padding_left)
     run {
       if (mUploadMarkBitmap == null) {
         mUploadMarkBitmap =
           BitmapFactory.decodeResource(resources, R.drawable.ic_find_previous_holo_dark)
       }
-      val matrix = Matrix()
-      val s = udMarkSize / mUploadMarkBitmap!!.width
-      matrix.setScale(s, s)
-      matrix.postTranslate(paddingLeft.toFloat(), 0f)
-      canvas.drawBitmap(mUploadMarkBitmap!!, matrix, paintUd)
+      val bmp = mUploadMarkBitmap!!
+      val s = udMarkSize / bmp.width
+      mUploadMatrix.setScale(s, s)
+      mUploadMatrix.postTranslate(mPaddingLeft.toFloat(), 0f)
+      canvas.drawBitmap(bmp, mUploadMatrix, paintUd)
     }
     run {
       if (mDownloadMarkBitmap == null) {
         mDownloadMarkBitmap =
           BitmapFactory.decodeResource(resources, R.drawable.ic_find_next_holo_dark)
       }
-      val matrix = Matrix()
-      val s = udMarkSize / mDownloadMarkBitmap!!.width
-      matrix.setScale(s, s)
-      matrix.postTranslate((xDownloadStart + paddingLeft).toFloat(), 0f)
-      canvas.drawBitmap(mDownloadMarkBitmap!!, matrix, paintUd)
+      val bmp = mDownloadMarkBitmap!!
+      val s = udMarkSize / bmp.width
+      mDownloadMatrix.setScale(s, s)
+      mDownloadMatrix.postTranslate((xDownloadStart + mPaddingLeft).toFloat(), 0f)
+      canvas.drawBitmap(bmp, mDownloadMatrix, paintUd)
     }
 
     // FPS
@@ -336,6 +341,19 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
 
     mSurfaceHolder!!.unlockCanvasAndPost(canvas)
+  }
+
+  /** Resources 由来の値(色・寸法)を一度だけロードしてキャッシュする */
+  private fun ensureResourcesCached() {
+    if (mResCached) return
+    val res = resources
+    mBgColor = ResourcesCompat.getColor(res, R.color.textBackgroundColor, null)
+    mUploadBorderColor = ResourcesCompat.getColor(res, R.color.uploadBorder, null)
+    mDownloadBorderColor = ResourcesCompat.getColor(res, R.color.downloadBorder, null)
+    mPaddingRight = res.getDimensionPixelSize(R.dimen.overlay_padding_right)
+    mPaddingLeft = res.getDimensionPixelSize(R.dimen.overlay_padding_left)
+    mBarStrokeWidth = res.getDimensionPixelSize(R.dimen.updown_bar_right_border_size).toFloat()
+    mResCached = true
   }
 
   private fun getReadableUDText(bytes: Long): String {
@@ -360,84 +378,47 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
     val currentP = if (getTx) t.pTx else t.pRx
 
-    // スナップショットを取得してスレッド安全にアクセスする
-    val snapshot: List<Traffic>
+    // 直近 2 点の Traffic をスレッド安全に取り出す
+    val prev: Traffic
+    val curr: Traffic
     synchronized(mTrafficList) {
-      snapshot = ArrayList(mTrafficList)
-    }
-
-    val n = snapshot.size - 1
-    if (n < 2) {
-      return currentP
-    } else {
-
-      // 最後の2つ分の差分時間を補間に使う
-      val lastIntervalTime = snapshot[n].time - snapshot[n - 1].time
-      val elapsed = now - snapshot[n].time
-      if (elapsed > lastIntervalTime * 3) {
-        // 十分時間が経過しているので収束させる
+      val size = mTrafficList.size
+      if (size < 2) {
+        // 補間できるだけの点数が集まっていない
         return currentP
-      } else {
-
-        // 補間準備
-        val x = DoubleArray(n + 1)
-        val y = DoubleArray(n + 1)
-        for (i in 0 until n + 1) {
-          val t1 = snapshot[i]
-          x[i] = t1.time.toDouble()
-          y[i] = (if (getTx) t1.pTx else t1.pRx).toDouble()
-        }
-
-        // 要は lastIntervalTime 分だけ遅れて描画される感じ
-        // でも lastIntervalTime だと遅すぎるので少し短くしておく
-        val at = now - lastIntervalTime / 2
-        val p = lagrange(n, x, y, at.toDouble()).toInt()
-        if (p < 0) {
-          return 0
-        } else if (p > 1000) {
-          return 1000
-        }
-
-        // 前回の差分から方向を算出し、現在値を超えていたら超えないようにする
-        val lastP = if (getTx) mLastPTx else mLastPRx
-        val direction = p - lastP
-        if (direction > 0 && p > currentP) {
-          // 上昇方向で超過しているので制限する
-          return currentP
-        } else if (direction < 0 && p < currentP) {
-          // 下降方向で下回っているので制限する
-          return currentP
-        }
-
-        return p
       }
-    }
-  }
-
-  private fun lagrange(n: Int, x: DoubleArray, y: DoubleArray, x1: Double): Double {
-
-    var s1: Double
-    var s2: Double
-    var y1 = 0.0
-    var i1 = 0
-    var i2: Int
-
-    while (i1 <= n) {
-      s1 = 1.0
-      s2 = 1.0
-      i2 = 0
-      while (i2 <= n) {
-        if (i2 != i1) {
-          s1 *= x1 - x[i2]
-          s2 *= x[i1] - x[i2]
-        }
-        i2++
-      }
-      y1 += y[i1] * s1 / s2
-      i1++
+      curr = mTrafficList[size - 1]
+      prev = mTrafficList[size - 2]
     }
 
-    return y1
+    val lastIntervalTime = curr.time - prev.time
+    if (lastIntervalTime <= 0) {
+      // 想定外(時刻が巻き戻った等)は補間せず現在値を返す
+      return currentP
+    }
+
+    val elapsed = now - curr.time
+    if (elapsed > lastIntervalTime * 3) {
+      // 十分時間が経過しているので収束させる
+      return currentP
+    }
+
+    // 要は lastIntervalTime 分だけ遅れて描画される感じ
+    // でも lastIntervalTime だと遅すぎるので少し短くしておく
+    val at = now - lastIntervalTime / 2
+
+    val prevValue = if (getTx) prev.pTx else prev.pRx
+    val currValue = if (getTx) curr.pTx else curr.pRx
+
+    // at が [prev.time, curr.time] の外側なら端点に張り付ける
+    // (2 点線形補間: ラグランジュのような 3 次オーバーシュートが起きないため
+    //  従来の「上昇方向で超過」ガードは不要)
+    if (at <= prev.time) return prevValue.coerceIn(0, 1000)
+    if (at >= curr.time) return currValue.coerceIn(0, 1000)
+
+    val fraction = (at - prev.time).toDouble() / lastIntervalTime.toDouble()
+    val p = (prevValue + (currValue - prevValue) * fraction).toInt()
+    return p.coerceIn(0, 1000)
   }
 
   override fun surfaceCreated(holder: SurfaceHolder) {
