@@ -37,9 +37,11 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   private var mView: MyRelativeLayout? = null
   private var mWindowManager: WindowManager? = null
+  @Volatile
   private var mAttached = false
 
 
+  @Volatile
   private var mSleeping = false
 
   private var mServiceAlive = true
@@ -63,7 +65,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
 
   // 通信量取得スレッド管理
+  @Volatile
   private var mThread: GatherThread? = null
+  @Volatile
   private var mThreadActive = false
   private val mHandler = Handler(Looper.getMainLooper())
 

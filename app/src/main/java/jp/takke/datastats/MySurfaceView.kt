@@ -21,8 +21,10 @@ import java.util.LinkedList
 class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
   private var mSurfaceHolder: SurfaceHolder? = null
+  @Volatile
   private var mThread: Thread? = null
 
+  @Volatile
   private var mThreadActive: Boolean = false
 
   private var mScreenWidth: Int = 0
@@ -508,6 +510,7 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     private const val TRAFFIC_LIST_COUNT_MAX = 3
 
 
+    @Volatile
     var sForceRedraw = false
   }
 
