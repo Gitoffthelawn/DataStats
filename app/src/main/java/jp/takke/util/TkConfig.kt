@@ -1,7 +1,7 @@
-package jp.takke.util;
+package jp.takke.util
 
-import jp.takke.datastats.BuildConfig;
+import jp.takke.datastats.BuildConfig
 
-public class TkConfig {
-    public static boolean debugMode = BuildConfig.DEBUG;
+object TkConfig {
+  var debugMode: Boolean = BuildConfig.DEBUG
 }

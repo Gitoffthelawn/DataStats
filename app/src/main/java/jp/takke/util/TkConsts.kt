@@ -1,6 +1,6 @@
-package jp.takke.util;
+package jp.takke.util
 
-public class TkConsts {
-    public static final String LOG_NAME = "DataStats";
-    public static final String EXTERNAL_LOG_FILENAME = "log.txt";
+object TkConsts {
+  const val LOG_NAME = "DataStats"
+  const val EXTERNAL_LOG_FILENAME = "log.txt"
 }

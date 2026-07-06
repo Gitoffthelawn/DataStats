@@ -1,236 +1,132 @@
-package jp.takke.util;
+package jp.takke.util
 
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.util.Log;
+import android.annotation.SuppressLint
+import android.content.Context
+import android.util.Log
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.lang.ref.WeakReference
+import java.text.SimpleDateFormat
+import java.util.Date
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.lang.ref.WeakReference;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+object MyLog {
 
-public class MyLog {
+  private var sContextRef: WeakReference<Context>? = null
 
-    private static WeakReference<Context> sContextRef = null;
+  fun d(msg: String) {
+    if (TkConfig.debugMode || TkUtil.isEmulator) {
+      Log.d(TkConsts.LOG_NAME, msg)
+    }
+    dumpToExternalLogFile(Log.DEBUG, msg)
+  }
 
-//	public static void v(String msg) {
-//		if (TkUtil.isEmulator()) {
-//			Log.v(TkConsts.LOG_NAME, msg);
-//		}
-//	}
-//
-//	public static void v(String msg, Throwable th) {
-//		if (TkUtil.isEmulator()) {
-//			Log.v(TkConsts.LOG_NAME, msg, th);
-//		}
-//	}
+  fun d(msg: String, th: Throwable) {
+    if (TkConfig.debugMode || TkUtil.isEmulator) {
+      Log.d(TkConsts.LOG_NAME, msg, th)
+    }
+    dumpToExternalLogFile(Log.DEBUG, msg)
+    dumpToExternalLogFile(Log.DEBUG, Log.getStackTraceString(th))
+  }
 
+  fun i(msg: String) {
+    Log.i(TkConsts.LOG_NAME, msg)
+    dumpToExternalLogFile(Log.INFO, msg)
+  }
 
-    public static void d(String msg) {
-        if (TkConfig.debugMode || TkUtil.INSTANCE.isEmulator()) {
-            Log.d(TkConsts.LOG_NAME, msg);
+  fun w(msg: String) {
+    Log.w(TkConsts.LOG_NAME, msg)
+    dumpToExternalLogFile(Log.WARN, msg)
+  }
+
+  fun e(th: Throwable) {
+    Log.e(TkConsts.LOG_NAME, th.message, th)
+    dumpToExternalLogFile(Log.ERROR, Log.getStackTraceString(th))
+  }
+
+  /**
+   * 外部ストレージ(通常はSDカード)にログを出力する
+   */
+  @SuppressLint("SimpleDateFormat")
+  @Synchronized
+  private fun dumpToExternalLogFile(error: Int, msg: String) {
+
+    // 外部ストレージ出力条件確認
+    // DEBUG ログはデバッグモードのみ出力する
+    if (!TkConfig.debugMode) return
+
+    try {
+      // 保存先の決定
+      val fout = IOUtil.getInternalStorageAppFilesDirectoryAsFile(sContextRef?.get())
+        ?: return  // メディア非マウントなど
+      val path = fout.absolutePath + "/" + TkConsts.EXTERNAL_LOG_FILENAME
+
+      // ファイルに書き込む (append)
+      FileOutputStream(path, true).use { out ->
+        BufferedOutputStream(out).use { bout ->
+          // 日付時刻
+          val sdf = SimpleDateFormat("yyyy/MM/dd\tHH:mm:ss.SSS")
+          bout.write(sdf.format(Date()).toByteArray())
+          bout.write("\t".toByteArray())
+
+          // エラーレベル
+          val levelTag = when (error) {
+            Log.INFO -> "[INFO]"
+            Log.WARN -> "[WARN]"
+            Log.ERROR -> "[ERROR]"
+            Log.DEBUG -> "[DEBUG]"
+            else -> ""
+          }
+          bout.write(levelTag.toByteArray())
+
+          // ログ本文
+          bout.write("\t".toByteArray())
+          bout.write(msg.toByteArray(Charsets.UTF_8))
+          bout.write("\n".toByteArray())
+
+          bout.flush()
         }
-
-        MyLog.dumpToExternalLogFile(Log.DEBUG, msg);
+      }
+    } catch (e: Exception) {
+      Log.e(TkConsts.LOG_NAME, e.message, e)
     }
+  }
 
-//	/**
-//	 * msg 内の {elapsed} 部分を経過時刻に変換し出力する
-//	 *
-//	 * @param msg メッセージ
-//	 * @param startTick 測定開始時刻[ms]
-//	 */
-//	public static void dWithElapsedTime(String msg, long startTick) {
-//
-//		if (TkConfig.debugMode || TkUtil.isEmulator()) {
-//			d(msg.replace("{elapsed}", (System.currentTimeMillis() - startTick) + ""));
-//		}
-//	}
+  /**
+   * 外部ストレージのログファイルがある一定サイズ以上の場合に削除する
+   *
+   * 通常は起動時にチェックさせる
+   */
+  fun deleteBigExternalLogFile() {
 
-    public static void d(String msg, Throwable th) {
-        if (TkConfig.debugMode || TkUtil.INSTANCE.isEmulator()) {
-            Log.d(TkConsts.LOG_NAME, msg, th);
-        }
+    if (!TkConfig.debugMode) return
 
-        MyLog.dumpToExternalLogFile(Log.DEBUG, msg);
-        MyLog.dumpToExternalLogFile(Log.DEBUG, Log.getStackTraceString(th));
+    try {
+      val fout = IOUtil.getInternalStorageAppFilesDirectoryAsFile(sContextRef?.get())
+        ?: return
+      val path = fout.absolutePath + "/" + TkConsts.EXTERNAL_LOG_FILENAME
+
+      val file = File(path)
+      val maxFileSize = 1 * 1024 * 1024L  // [MB]
+
+      Log.i(
+        TkConsts.LOG_NAME,
+        "external log size check, size[${file.length()}], limit[$maxFileSize]",
+      )
+
+      if (file.length() > maxFileSize) {
+        file.delete()
+      }
+    } catch (e: Exception) {
+      Log.e(TkConsts.LOG_NAME, e.message, e)
     }
+  }
 
+  fun setContext(context: Context) {
+    sContextRef = WeakReference(context)
+  }
 
-    public static void i(String msg) {
-        Log.i(TkConsts.LOG_NAME, msg);
-
-        MyLog.dumpToExternalLogFile(Log.INFO, msg);
-    }
-
-//	public static void iWithElapsedTime(String msg, long startTick) {
-//
-//		i(msg.replace("{elapsed}", (System.currentTimeMillis() - startTick) + ""));
-//	}
-
-//	public static void i(String msg, Throwable th) {
-//		Log.i(TkConsts.LOG_NAME, msg, th);
-//
-//		MyLog.dumpToExternalLogFile(Log.INFO, msg);
-//		MyLog.dumpToExternalLogFile(Log.INFO, Log.getStackTraceString(th));
-//	}
-
-
-    public static void w(String msg) {
-        Log.w(TkConsts.LOG_NAME, msg);
-
-        MyLog.dumpToExternalLogFile(Log.WARN, msg);
-    }
-
-//	public static void wWithElapsedTime(String msg, long startTick) {
-//
-//		if (TkConfig.debugMode || TkUtil.isEmulator()) {
-//			w(msg.replace("{elapsed}", (System.currentTimeMillis() - startTick) + ""));
-//		}
-//	}
-//
-//	public static void w(String msg, Throwable th) {
-//		Log.w(TkConsts.LOG_NAME, msg, th);
-//
-//		MyLog.dumpToExternalLogFile(Log.WARN, msg);
-//		MyLog.dumpToExternalLogFile(Log.WARN, Log.getStackTraceString(th));
-//	}
-//
-//	public static void w(Throwable th) {
-//		Log.w(TkConsts.LOG_NAME, th.getMessage(), th);
-//
-//		MyLog.dumpToExternalLogFile(Log.WARN, Log.getStackTraceString(th));
-//	}
-
-
-//	public static void e(String msg) {
-//		Log.e(TkConsts.LOG_NAME, msg);
-//
-//		MyLog.dumpToExternalLogFile(Log.ERROR, msg);
-//	}
-//
-//	public static void e(String msg, Throwable th) {
-//		Log.e(TkConsts.LOG_NAME, msg, th);
-//
-//		MyLog.dumpToExternalLogFile(Log.ERROR, msg);
-//		MyLog.dumpToExternalLogFile(Log.ERROR, Log.getStackTraceString(th));
-//	}
-
-    public static void e(Throwable th) {
-        Log.e(TkConsts.LOG_NAME, th.getMessage(), th);
-
-        MyLog.dumpToExternalLogFile(Log.ERROR, Log.getStackTraceString(th));
-    }
-
-    /**
-     * 外部ストレージ(通常はSDカード)にログを出力する
-     *
-     * @param error エラーレベル
-     * @param msg   メッセージ
-     */
-    @SuppressLint("SimpleDateFormat")
-    private static synchronized void dumpToExternalLogFile(int error, String msg) {
-
-        // 外部ストレージ出力条件確認
-        if (!TkConfig.debugMode) {
-            // DEBUG ログはデバッグモードのみ出力する
-            return;
-        }
-
-        try {
-            // 保存先の決定
-            final File fout = IOUtil.getInternalStorageAppFilesDirectoryAsFile(sContextRef.get());
-            if (fout == null) {
-                // メディア非マウントなど
-                return;
-            }
-            final String path = fout.getAbsolutePath() + "/" + TkConsts.EXTERNAL_LOG_FILENAME;
-
-            // ファイルに書き込む
-            final FileOutputStream out = new FileOutputStream(path, true);    // append
-            final BufferedOutputStream bout = new BufferedOutputStream(out);
-
-            // 日付時刻
-            final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd\tHH:mm:ss.SSS");
-            bout.write(sdf.format(new Date()).getBytes());
-            bout.write("\t".getBytes());
-
-            // エラーレベル
-            switch (error) {
-                case Log.INFO:
-                    bout.write("[INFO]".getBytes());
-                    break;
-                case Log.WARN:
-                    bout.write("[WARN]".getBytes());
-                    break;
-                case Log.ERROR:
-                    bout.write("[ERROR]".getBytes());
-                    break;
-                case Log.DEBUG:
-                    bout.write("[DEBUG]".getBytes());
-                    break;
-                default:
-                    break;
-            }
-
-            // ログ本文
-            bout.write("\t".getBytes());
-            bout.write(msg.getBytes("UTF-8"));
-            bout.write("\n".getBytes());
-
-            bout.flush();
-            bout.close();
-            out.close();
-
-        } catch (Exception e) {
-            Log.e("DataStats", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 外部ストレージのログファイルがある一定サイズ以上の場合に削除する
-     * <p>
-     * 通常は起動時にチェックさせる
-     */
-    public static void deleteBigExternalLogFile() {
-
-        if (!TkConfig.debugMode) {
-            return;
-        }
-
-        try {
-            // 保存先の決定
-            final File fout = IOUtil.getInternalStorageAppFilesDirectoryAsFile(sContextRef.get());
-            if (fout == null) {
-                // メディア非マウントなど
-                return;
-            }
-            final String path = fout.getAbsolutePath() + "/" + TkConsts.EXTERNAL_LOG_FILENAME;
-
-            // チェック＆削除
-            final File file = new File(path);
-            //noinspection PointlessArithmeticExpression
-            final int MAXFILESIZE = 1 * 1024 * 1024;    // [MB]
-
-            Log.i(TkConsts.LOG_NAME, "external log size check, size[" + file.length() + "], limit[" + MAXFILESIZE + "]");
-
-            if (file.length() > MAXFILESIZE) {
-                //noinspection ResultOfMethodCallIgnored
-                file.delete();
-            }
-
-        } catch (Exception e) {
-            Log.e(TkConsts.LOG_NAME, e.getMessage(), e);
-        }
-    }
-
-    public static void setContext(Context context) {
-
-        sContextRef = new WeakReference<>(context);
-    }
-
-    public static void close() {
-    }
+  fun close() {
+    // no-op
+  }
 }

@@ -1,60 +1,59 @@
-package jp.takke.datastats;
+package jp.takke.datastats
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
+import android.content.Context
+import androidx.preference.PreferenceManager
+import jp.takke.util.MyLog
+import jp.takke.util.TkConfig
+import kotlin.math.pow
 
-import jp.takke.util.MyLog;
-import jp.takke.util.TkConfig;
+object Config {
 
-public class Config {
+  // 文字色変更基準[Bytes]
+  var highLimit: Long = 0
+  var middleLimit: Long = 0
 
-    // 文字色変更基準[Bytes]
-    public static long highLimit;
-    public static long middleLimit;
+  var xPos: Int = 90  // [0, 100]
+  var barMaxKB: Int = 100
+  var unitTypeBps: Boolean = false
 
-    public static int xPos = 90;  // [0, 100]
-    public static int barMaxKB = 100;
-    public static boolean unitTypeBps;
+  var logBar: Boolean = true
+  var intervalMs: Int = 1000
+  var hideWhenInFullscreen: Boolean = true
 
-    public static boolean logBar = true;
-    public static int intervalMs = 1000;
-    public static boolean hideWhenInFullscreen = true;
+  var interpolateMode: Boolean = false
 
-    public static boolean interpolateMode = false;
-
-    public static int textSizeSp = C.DEFAULT_TEXT_SIZE_SP;
+  var textSizeSp: Int = C.DEFAULT_TEXT_SIZE_SP
 
 
-    public static void loadPreferences(Context context) {
+  fun loadPreferences(context: Context) {
 
-        MyLog.d("Config.loadPreferences");
+    MyLog.d("Config.loadPreferences")
 
-        final SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
-        TkConfig.debugMode = pref.getBoolean(C.PREF_KEY_DEBUG_MODE, false);
-        xPos = pref.getInt(C.PREF_KEY_X_POS, 100);
-        intervalMs = pref.getInt(C.PREF_KEY_INTERVAL_MSEC, 1000);
-        barMaxKB = pref.getInt(C.PREF_KEY_BAR_MAX_SPEED_KB, 10240);
-        unitTypeBps = pref.getBoolean(C.PREF_KEY_UNIT_TYPE_BPS, false);
-        logBar = pref.getBoolean(C.PREF_KEY_LOGARITHM_BAR, true);
-        hideWhenInFullscreen = pref.getBoolean(C.PREF_KEY_HIDE_WHEN_IN_FULLSCREEN, true);
-        interpolateMode = pref.getBoolean(C.PREF_KEY_INTERPOLATE_MODE, false);
-        textSizeSp = pref.getInt(C.PREF_KEY_TEXT_SIZE_SP, C.DEFAULT_TEXT_SIZE_SP);
+    val pref = PreferenceManager.getDefaultSharedPreferences(context)
+    TkConfig.debugMode = pref.getBoolean(C.PREF_KEY_DEBUG_MODE, false)
+    xPos = pref.getInt(C.PREF_KEY_X_POS, 100)
+    intervalMs = pref.getInt(C.PREF_KEY_INTERVAL_MSEC, 1000)
+    barMaxKB = pref.getInt(C.PREF_KEY_BAR_MAX_SPEED_KB, 10240)
+    unitTypeBps = pref.getBoolean(C.PREF_KEY_UNIT_TYPE_BPS, false)
+    logBar = pref.getBoolean(C.PREF_KEY_LOGARITHM_BAR, true)
+    hideWhenInFullscreen = pref.getBoolean(C.PREF_KEY_HIDE_WHEN_IN_FULLSCREEN, true)
+    interpolateMode = pref.getBoolean(C.PREF_KEY_INTERPOLATE_MODE, false)
+    textSizeSp = pref.getInt(C.PREF_KEY_TEXT_SIZE_SP, C.DEFAULT_TEXT_SIZE_SP)
 
-        // 文字色変更基準の再計算
-        if (logBar) {
-            // 「バー全体の (pXxxLimit*100) [%] を超えたらカラーを変更する」基準値を計算する
-            // 例: max=10MB/s ⇒ 30% は 3,238[B]
-            final double pMiddleLimit = 0.3;  // [0, 1]
-            middleLimit = (long) (barMaxKB / 100.0 * Math.pow(10.0, pMiddleLimit * 5.0));
+    // 文字色変更基準の再計算
+    if (logBar) {
+      // 「バー全体の (pXxxLimit*100) [%] を超えたらカラーを変更する」基準値を計算する
+      // 例: max=10MB/s ⇒ 30% は 3,238[B]
+      val pMiddleLimit = 0.3  // [0, 1]
+      middleLimit = (barMaxKB / 100.0 * 10.0.pow(pMiddleLimit * 5.0)).toLong()
 
-            // 例: max=10MB/s ⇒ 60% は 100[KB]
-            final double pHighLimit = 0.6;  // [0, 1]
-            highLimit = (long) (barMaxKB / 100.0 * Math.pow(10.0, pHighLimit * 5.0));
-        } else {
-            middleLimit = 10 * 1024;
-            highLimit = 100 * 1024;
-        }
-        MyLog.d("loadPreferences: update limit for colors: middle[" + middleLimit + "B], high[" + highLimit + "B]");
+      // 例: max=10MB/s ⇒ 60% は 100[KB]
+      val pHighLimit = 0.6  // [0, 1]
+      highLimit = (barMaxKB / 100.0 * 10.0.pow(pHighLimit * 5.0)).toLong()
+    } else {
+      middleLimit = (10 * 1024).toLong()
+      highLimit = (100 * 1024).toLong()
     }
+    MyLog.d("loadPreferences: update limit for colors: middle[${middleLimit}B], high[${highLimit}B]")
+  }
 }
