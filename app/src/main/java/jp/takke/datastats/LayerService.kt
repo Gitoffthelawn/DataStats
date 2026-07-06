@@ -721,6 +721,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       MyLog.d("LayerService.stopGatherThread")
 
       mThreadActive = false
+      // Thread.sleep 中の GatherThread を即座に起こすため interrupt() で中断してから join する
+      // (最大 2 秒のメインスレッドブロックによる ANR 回避)
+      mThread?.interrupt()
       while (true) {
         try {
           mThread?.join()
@@ -749,7 +752,14 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
       while (mThread != null && mThreadActive) {
 
-        SystemClock.sleep(Config.intervalMs.toLong())
+        // SystemClock.sleep は割り込み不可のため Thread.sleep を使用する
+        // (stopGatherThread() からの interrupt() で即座に抜けられるように)
+        try {
+          Thread.sleep(Config.intervalMs.toLong())
+        } catch (e: InterruptedException) {
+          MyLog.d("LayerService\$GatherThread: interrupted")
+          break
+        }
 
         gatherTraffic()
 
