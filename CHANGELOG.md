@@ -4,6 +4,7 @@ Change Log
 v3.1.0 (2026.07.xx)
 -------------------
 
+- Fix: fullscreen detection on Android 11+ by switching to WindowInsets (status bar visibility); the legacy size-based detection no longer works with TYPE_APPLICATION_OVERLAY
 - UI: first-launch onboarding screen explaining why the overlay / notification / battery-optimization settings are needed; the resident service is turned on by default when onboarding completes
 - UI: revamp the settings screen with Jetpack Compose + Material 3 (DayNight, Material You dynamic colors), grouped into Display / Behavior / Startup sections with per-setting descriptions
 - Refactor: route force-redraw requests through AIDL (ILayerService.forceRedraw) instead of Activity poking the SurfaceView static

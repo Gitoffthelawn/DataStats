@@ -359,6 +359,11 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     // レイアウトファイルから重ね合わせするViewを作成する
     mView = layoutInflater.inflate(R.layout.overlay, null) as MyRelativeLayout
 
+    // 全画面状態の変化を次回の更新タイミングを待たず即座に表示へ反映する
+    mView?.onFullScreenChangedListener = {
+      showTraffic()
+    }
+
     // Viewを画面上に重ね合わせする
     mWindowManager?.addView(mView, params)
 
