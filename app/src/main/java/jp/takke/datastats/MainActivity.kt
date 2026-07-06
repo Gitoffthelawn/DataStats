@@ -42,6 +42,11 @@ class MainActivity : AppCompatActivity() {
 
   private var mServiceIF: ILayerService? = null
 
+  // bindService() 呼び出し済みかどうか。
+  // onServiceConnected が呼ばれる前に onDestroy が来ても unbind が漏れないよう
+  // 接続状態(mServiceIF)ではなく bind 状態で unbind の判定を行う
+  private var mBound = false
+
   private val mServiceConnection = object : ServiceConnection {
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
 
@@ -183,7 +188,9 @@ class MainActivity : AppCompatActivity() {
 
     // bind
     MyLog.d("MainActivity: bindService of LayerService")
-    bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE)
+    if (bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE)) {
+      mBound = true
+    }
   }
 
   private fun requestOverlayPermission() {
@@ -210,8 +217,12 @@ class MainActivity : AppCompatActivity() {
 
   override fun onDestroy() {
 
-    if (mServiceIF != null) {
+    // onServiceConnected 前に onDestroy が来た場合、mServiceIF が null でも bind は生きているため
+    // mBound で判定する(接続状態ではリークが発生する)
+    if (mBound) {
       unbindService(mServiceConnection)
+      mBound = false
+      mServiceIF = null
     }
 
     super.onDestroy()
@@ -282,15 +293,16 @@ class MainActivity : AppCompatActivity() {
   private fun doStopService() {
 
     if (mServiceIF != null) {
-
       try {
         mServiceIF!!.stop()
       } catch (e: RemoteException) {
         MyLog.e(e)
       }
+    }
 
+    if (mBound) {
       unbindService(mServiceConnection)
-
+      mBound = false
       mServiceIF = null
     }
   }
