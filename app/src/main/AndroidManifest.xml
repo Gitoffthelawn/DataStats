@@ -43,6 +43,18 @@
 
         <receiver android:name=".SwitchButtonReceiver" />
 
+        <!-- クイック設定タイル: オーバーレイの表示/非表示を切り替える -->
+        <service
+            android:name=".OverlayTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_qs_speed"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

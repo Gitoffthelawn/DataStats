@@ -47,6 +47,9 @@
 
     <string name="preview_hint">拖动滑块或点击示例按钮，将预览值注入悬浮窗</string>
 
+    <!-- 快速设置磁贴 -->
+    <string name="tile_label">速度表</string>
+
     <!-- 引导页 -->
     <string name="onboarding_title">欢迎使用 DataStats</string>
     <string name="onboarding_intro">DataStats 将以悬浮窗形式实时显示网络速度。请授予以下权限以确保应用稳定运行。</string>

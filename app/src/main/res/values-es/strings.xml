@@ -47,6 +47,9 @@
 
     <string name="preview_hint">Arrastra el deslizador o toca una muestra para inyectar un valor de previsualización en la superposición</string>
 
+    <!-- Panel de ajustes rápidos -->
+    <string name="tile_label">Medidor de velocidad</string>
+
     <!-- Onboarding -->
     <string name="onboarding_title">Te damos la bienvenida a DataStats</string>
     <string name="onboarding_intro">DataStats muestra un medidor de velocidad de red en tiempo real como superposición en tu pantalla. Concede los siguientes permisos para que la app funcione correctamente.</string>

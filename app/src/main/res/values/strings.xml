@@ -47,6 +47,9 @@
 
     <string name="preview_hint">Drag the slider or tap a sample to inject a preview value into the overlay</string>
 
+    <!-- Quick Settings tile -->
+    <string name="tile_label">Speed meter</string>
+
     <!-- Onboarding -->
     <string name="onboarding_title">Welcome to DataStats</string>
     <string name="onboarding_intro">DataStats shows a real-time network speed meter as an overlay on your screen. Please grant the following permissions so the app can work reliably.</string>

@@ -14,6 +14,10 @@ object C {
   const val PREF_KEY_SPARKLINE_MODE = "sparklineMode"
   const val PREF_KEY_ONBOARDING_DONE = "onboardingDone"
 
+  // ユーザが「オーバーレイ表示」を望んでいるか(通知ボタン / QS タイルで切替)。
+  // QS タイル側から現在状態を参照するため prefs に永続化する。
+  const val PREF_KEY_USER_WANTS_VISIBLE = "userWantsVisible"
+
   const val DEFAULT_TEXT_SIZE_SP = 8
 
   // 初期Alarmの遅延時間[ms]

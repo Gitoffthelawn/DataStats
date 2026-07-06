@@ -47,6 +47,9 @@
 
     <string name="preview_hint">슬라이더를 드래그하거나 샘플을 눌러 오버레이에 미리보기 값을 주입합니다</string>
 
+    <!-- 빠른 설정 타일 -->
+    <string name="tile_label">속도 미터</string>
+
     <!-- 온보딩 -->
     <string name="onboarding_title">DataStats에 오신 것을 환영합니다</string>
     <string name="onboarding_intro">DataStats는 통신 속도를 실시간 오버레이로 표시합니다. 안정적으로 동작하도록 다음 권한을 허용해 주세요.</string>

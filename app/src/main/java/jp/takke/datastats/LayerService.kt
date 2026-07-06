@@ -381,6 +381,12 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     mHasOverlayPermission = true
 
+    // ユーザ意図(Show/Hide 状態)を prefs から復元
+    // ※ QS タイルからの切替を LayerService 再作成後も引き継ぐため
+    mUserWantsVisible = androidx.preference.PreferenceManager
+      .getDefaultSharedPreferences(this)
+      .getBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, true)
+
     // Viewからインフレータを作成する
     val layoutInflater = LayoutInflater.from(this)
 
@@ -479,22 +485,14 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     //--------------------------------------------------
     if (action != null) {
       when (action) {
-        "show" -> {
-          mUserWantsVisible = true
-          applyOverlayVisibility()
-        }
+        "show" -> setUserWantsVisible(true)
 
-        "hide" -> {
-          mUserWantsVisible = false
-          applyOverlayVisibility()
-        }
+        "hide" -> setUserWantsVisible(false)
 
         "hide_and_resume" -> {
-          mUserWantsVisible = false
-          applyOverlayVisibility()
+          setUserWantsVisible(false)
           mHandler.postDelayed(10000L) {
-            mUserWantsVisible = true
-            applyOverlayVisibility()
+            setUserWantsVisible(true)
             showNotification()
           }
           Toast.makeText(
@@ -523,6 +521,21 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   private fun showNotification() {
     // 通知のボタン(Show/Hide)はユーザ意図に従う。全画面による一時非表示は反映しない。
     mNotificationPresenter.showNotification(mUserWantsVisible)
+  }
+
+  /**
+   * ユーザ意図(Show/Hide)を更新する。prefs にも永続化して
+   * クイック設定タイル側からも参照できるようにする。
+   */
+  private fun setUserWantsVisible(value: Boolean) {
+    mUserWantsVisible = value
+    androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+      .edit()
+      .putBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, value)
+      .apply()
+    applyOverlayVisibility()
+    // QS タイルの表示状態を最新化(タイルが listening 中なら onStartListening が再度呼ばれて更新される)
+    OverlayTileService.requestTileUpdate(this)
   }
 
   /**

@@ -47,6 +47,9 @@
 
     <string name="preview_hint">スライダーやサンプルボタンでオーバーレイにプレビュー値を注入します</string>
 
+    <!-- クイック設定タイル -->
+    <string name="tile_label">速度メーター</string>
+
     <!-- オンボーディング -->
     <string name="onboarding_title">DataStats へようこそ</string>
     <string name="onboarding_intro">DataStats は通信速度メーターを画面上にオーバーレイ表示するアプリです。安定動作のため次の権限を許可してください。</string>
