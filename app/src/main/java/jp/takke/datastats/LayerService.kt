@@ -775,7 +775,10 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
           @Suppress("DEPRECATION")
           if (!powerManager.isScreenOn) {
             MyLog.d("LayerService\$GatherThread: not interactive")
-            onScreenOff(mScreenOnOffSequence, "GatherThread")
+            // onScreenOff は mSleeping の書き換えと mHandler.postDelayed の登録を行うため
+            // メインスレッドに委譲する(ワーカースレッド直接呼び出しは競合の原因になる)
+            val seq = mScreenOnOffSequence
+            mHandler.post { onScreenOff(seq, "GatherThread") }
           }
         }
       }
