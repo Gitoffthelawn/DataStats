@@ -156,6 +156,23 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
       showTraffic()
     }
+
+    @Throws(RemoteException::class)
+    override fun forceRedraw(previewBytes: Long) {
+
+      MyLog.d("LayerService.forceRedraw bytes[$previewBytes]")
+
+      mSnapshot = true
+      mSnapshotBytes = previewBytes
+
+      // 補間モードや同一フレームスキップを無効化して 1 フレーム強制描画する
+      MySurfaceView.sForceRedraw = true
+      try {
+        showTraffic()
+      } finally {
+        MySurfaceView.sForceRedraw = false
+      }
+    }
   }
 
 

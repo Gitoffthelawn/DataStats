@@ -594,18 +594,25 @@ class MainActivity : AppCompatActivity() {
     // restart
     Config.loadPreferences(this)
 
-    MySurfaceView.sForceRedraw = true
-    startSnapshot(1)
-    MySurfaceView.sForceRedraw = false
+    // 直接 static 変数を書き換える裏口的な結合を避けるため AIDL 経由で強制再描画を伝達する
+    forceRedraw(1)
 
     Handler(Looper.getMainLooper()).postDelayed({
 
-      MySurfaceView.sForceRedraw = true
-      startSnapshot(1)
-      MySurfaceView.sForceRedraw = false
+      forceRedraw(1)
 
       doRestartService()
     }, 1)
+  }
+
+  private fun forceRedraw(previewBytes: Long) {
+    if (mServiceIF != null) {
+      try {
+        mServiceIF!!.forceRedraw(previewBytes)
+      } catch (e: RemoteException) {
+        MyLog.e(e)
+      }
+    }
   }
 
   private fun preparePreviewArea() {
