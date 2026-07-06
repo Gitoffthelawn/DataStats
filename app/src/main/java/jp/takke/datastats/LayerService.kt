@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.hardware.input.InputManager
 import android.net.TrafficStats
@@ -37,6 +38,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   private var mView: MyRelativeLayout? = null
   private var mWindowManager: WindowManager? = null
+  private var mOverlayLayoutParams: WindowManager.LayoutParams? = null
   @Volatile
   private var mAttached = false
 
@@ -324,6 +326,28 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     super.onRebind(intent)
   }
 
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+
+    MyLog.d("LayerService.onConfigurationChanged orientation[${newConfig.orientation}]")
+
+    // 回転などで画面サイズが変化する。以下を実施:
+    //  1) レイアウトキャッシュを無効化して次の updateWidgetSize で再計算させる
+    //  2) WindowManager オーバーレイは MATCH_PARENT でも自動リサイズしないことがあるため
+    //     LayoutParams を再適用して新しい画面幅で確実に再レイアウトさせる
+    mLayoutCached = false
+    val view = mView ?: return
+    val params = mOverlayLayoutParams ?: return
+    try {
+      mWindowManager?.updateViewLayout(view, params)
+    } catch (e: Exception) {
+      MyLog.e(e)
+    }
+
+    // 次の描画で新しい screenWidth が反映されるよう即描画をキック
+    showTraffic()
+  }
+
   @SuppressLint("RtlHardcoded", "InflateParams")
   override fun onCreate() {
     super.onCreate()
@@ -363,6 +387,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
         (getSystemService(Context.INPUT_SERVICE) as InputManager).maximumObscuringOpacityForTouch
     }
     params.gravity = Gravity.TOP or Gravity.LEFT
+    mOverlayLayoutParams = params
 
     // WindowManagerを取得する
     mWindowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -373,6 +398,16 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     // 全画面状態の変化を次回の更新タイミングを待たず即座に表示へ反映する
     mView?.onFullScreenChangedListener = {
       showTraffic()
+    }
+
+    // オーバーレイの実サイズ変化(端末回転など)を検知してレイアウトキャッシュを無効化する
+    // ※WindowManager オーバーレイ + MATCH_PARENT でも回転で即座にサイズ更新されないことがあるため
+    mView?.addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+      if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
+        mLayoutCached = false
+        // レイアウトが変わったので即描画を反映する
+        showTraffic()
+      }
     }
 
     // Viewを画面上に重ね合わせする
