@@ -446,13 +446,19 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     // デフォルトネットワーク種別モニタ起動
     // (showOnlyOnMobile の可視性判定、および mobileOnlyMeter モードの切替時反映のため)
     mNetworkMonitor = NetworkTypeMonitor(this).apply {
-      onChangedListener = {
-        // ネットワーク遷移で応答すべきは可視性(showOnlyOnMobile)
+      onChangedListener = { type ->
+        // ネットワーク遷移で応答すべきは可視性(showOnlyOnMobile)と種別バッジ
         // callback は非メインスレッドの可能性があるので main に post する
-        mHandler.post { applyOverlayVisibility() }
+        mHandler.post {
+          applyOverlayVisibility()
+          mView?.findViewById<MySurfaceView>(R.id.mySurfaceView)?.setNetworkType(type)
+        }
       }
       start()
     }
+    // 初期値も反映
+    mView?.findViewById<MySurfaceView>(R.id.mySurfaceView)
+      ?.setNetworkType(mNetworkMonitor?.currentType ?: NetworkTypeMonitor.NetworkType.NONE)
 
     // スリープ状態のレシーバ登録
     applicationContext.registerReceiver(mReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
@@ -588,6 +594,11 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       return
     }
 
+    // 可視性判定はキャッシュに乗せず毎回評価する。
+    // (showOnlyOnMobile / hideWhenInFullscreen / mUserWantsVisible は
+    //  updateWidgetSize のキャッシュキーに含まれておらず、
+    //  cache hit で早期 return されると反映されないため)
+    applyOverlayVisibility()
 
     //--------------------------------------------------
     // update widget size and location
@@ -659,11 +670,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mLayoutCached = true
 
     //--------------------------------------------------
-    // hide when in fullscreen
+    // hide when in fullscreen 等の visibility は showTraffic() 側で毎回反映するため
+    // ここでの適用は不要
     //--------------------------------------------------
-    // 実際の visibility 切替は applyOverlayVisibility() 側で mView 単位に一元管理する。
-    // (Android 14 では SurfaceView 単体の visibility=GONE では消えないケースがあるため)
-    applyOverlayVisibility()
 
     //--------------------------------------------------
     // set widget width

@@ -31,6 +31,9 @@ object Config {
   /** 総トラフィックではなくモバイル通信量のみを計測する */
   var mobileOnlyMeter: Boolean = false
 
+  /** オーバーレイに現在のネットワーク種別(W/M/E/V)を小さく描画する */
+  var showNetworkTypeIcon: Boolean = false
+
   var textSizeSp: Int = C.DEFAULT_TEXT_SIZE_SP
 
 
@@ -50,6 +53,7 @@ object Config {
     sparklineMode = pref.getBoolean(C.PREF_KEY_SPARKLINE_MODE, false)
     showOnlyOnMobile = pref.getBoolean(C.PREF_KEY_SHOW_ONLY_ON_MOBILE, false)
     mobileOnlyMeter = pref.getBoolean(C.PREF_KEY_MOBILE_ONLY_METER, false)
+    showNetworkTypeIcon = pref.getBoolean(C.PREF_KEY_SHOW_NETWORK_TYPE_ICON, false)
     textSizeSp = pref.getInt(C.PREF_KEY_TEXT_SIZE_SP, C.DEFAULT_TEXT_SIZE_SP)
 
     // 文字色変更基準の再計算

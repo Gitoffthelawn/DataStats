@@ -20,6 +20,7 @@
     <string name="config_sparkline">速度历史迷你图</string>
     <string name="config_show_only_on_mobile">仅移动网络时显示</string>
     <string name="config_mobile_only_meter">仅测量移动流量</string>
+    <string name="config_show_network_type_icon">显示网络类型标记</string>
 
     <string name="preview">预览</string>
     <string name="resident_service_running">DataStats 服务运行中</string>
@@ -47,6 +48,7 @@
     <string name="desc_sparkline">在悬浮窗上叠加显示最近 1 分钟的流量迷你图</string>
     <string name="desc_show_only_on_mobile">仅在使用移动数据连接时显示速度表(Wi-Fi、以太网、VPN 视为非移动)。</string>
     <string name="desc_mobile_only_meter">排除 Wi-Fi，仅测量移动数据流量。适合关注按流量计费网络的使用情况。</string>
+    <string name="desc_show_network_type_icon">在速度表上绘制表示当前网络的一个字符: W (Wi-Fi) / M (移动) / E (以太网) / V (VPN)。</string>
     <string name="desc_auto_start_on_boot">设备启动时自动启动服务。屏幕关闭时服务将自动暂停以节省电量。</string>
 
     <string name="preview_hint">拖动滑块或点击示例按钮，将预览值注入悬浮窗</string>

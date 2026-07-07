@@ -281,6 +281,7 @@ class MainActivity : ComponentActivity() {
       sparklineMode = Config.sparklineMode,
       showOnlyOnMobile = Config.showOnlyOnMobile,
       mobileOnlyMeter = Config.mobileOnlyMeter,
+      showNetworkTypeIcon = Config.showNetworkTypeIcon,
       textSizeSp = Config.textSizeSp,
       xPos = Config.xPos,
       intervalMs = Config.intervalMs,
@@ -329,6 +330,12 @@ class MainActivity : ComponentActivity() {
       savePref { putBoolean(C.PREF_KEY_MOBILE_ONLY_METER, checked) }
       mUiState = mUiState.copy(mobileOnlyMeter = checked)
       // 次回 gatherTraffic からモバイル計測に切替
+      doRestartService()
+    },
+    onShowNetworkTypeIconChange = { checked ->
+      savePref { putBoolean(C.PREF_KEY_SHOW_NETWORK_TYPE_ICON, checked) }
+      mUiState = mUiState.copy(showNetworkTypeIcon = checked)
+      // 次フレームからバッジ表示切替
       doRestartService()
     },
     onTextSizeDelta = { delta -> updateTextSize(delta) },

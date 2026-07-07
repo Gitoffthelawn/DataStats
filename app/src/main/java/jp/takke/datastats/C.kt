@@ -14,6 +14,7 @@ object C {
   const val PREF_KEY_SPARKLINE_MODE = "sparklineMode"
   const val PREF_KEY_SHOW_ONLY_ON_MOBILE = "showOnlyOnMobile"
   const val PREF_KEY_MOBILE_ONLY_METER = "mobileOnlyMeter"
+  const val PREF_KEY_SHOW_NETWORK_TYPE_ICON = "showNetworkTypeIcon"
   const val PREF_KEY_ONBOARDING_DONE = "onboardingDone"
 
   // ユーザが「オーバーレイ表示」を望んでいるか(通知ボタン / QS タイルで切替)。

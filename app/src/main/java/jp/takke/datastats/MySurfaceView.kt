@@ -49,9 +49,14 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
   private val mPaint = Paint()
   private val mPaintUd = Paint()
   private val mPaintSparkline = Paint()
+  private val mPaintNetworkType = Paint()
   private val mUploadMatrix = Matrix()
   private val mDownloadMatrix = Matrix()
   private val mSparklinePath = Path()
+
+  // 現在のネットワーク種別(showNetworkTypeIcon が ON のとき描画する)
+  @Volatile
+  private var mNetworkType: NetworkTypeMonitor.NetworkType = NetworkTypeMonitor.NetworkType.NONE
 
   // Resources から取得する値のキャッシュ(不変)
   private var mResCached = false
@@ -109,6 +114,24 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     MyLog.d("drawBlank")
 
     myDrawFrame(-1, -1, 0, 0)
+  }
+
+  /**
+   * 現在のネットワーク種別を設定する。
+   * `Config.showNetworkTypeIcon` が ON のときに描画するために保持する。
+   */
+  fun setNetworkType(type: NetworkTypeMonitor.NetworkType) {
+    if (mNetworkType == type) return
+    mNetworkType = type
+    // 補間モードでない場合は次の setTraffic まで再描画されないため、即座に 1 フレーム描く。
+    if (!Config.interpolateMode) {
+      sForceRedraw = true
+      try {
+        myDraw()
+      } finally {
+        sForceRedraw = false
+      }
+    }
   }
 
   fun setTraffic(tx: Long, pTx: Int, rx: Long, pRx: Int) {
@@ -350,7 +373,38 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
       drawSparklines(canvas, xDownloadStart)
     }
 
+    //--------------------------------------------------
+    // network type badge (W / M / E / V)
+    //--------------------------------------------------
+    if (Config.showNetworkTypeIcon) {
+      drawNetworkTypeBadge(canvas, xDownloadStart, textSizePx)
+    }
+
     mSurfaceHolder!!.unlockCanvasAndPost(canvas)
+  }
+
+  /**
+   * オーバーレイ中央(upload と download の境界)に小さくネットワーク種別文字を描画する。
+   * "W" = Wi-Fi / "M" = Mobile / "E" = Ethernet / "V" = VPN
+   */
+  private fun drawNetworkTypeBadge(canvas: Canvas, xDownloadStart: Int, textSizePx: Float) {
+    val label = when (mNetworkType) {
+      NetworkTypeMonitor.NetworkType.WIFI -> "W"
+      NetworkTypeMonitor.NetworkType.MOBILE -> "M"
+      NetworkTypeMonitor.NetworkType.ETHERNET -> "E"
+      NetworkTypeMonitor.NetworkType.VPN -> "V"
+      NetworkTypeMonitor.NetworkType.NONE -> return
+    }
+    val paint = mPaintNetworkType
+    paint.color = 0xFFFFFF00.toInt()   // 視認性の高い黄
+    paint.setShadowLayer(1.5f, 0f, 0f, 0xFF000000.toInt())
+    paint.textAlign = Paint.Align.CENTER
+    paint.textSize = textSizePx * 0.75f
+    paint.typeface = Typeface.MONOSPACE
+    paint.isAntiAlias = true
+    // 上端に寄せる(mScreenHeight 内で baseline は textSize 分下がるので少し余白)
+    canvas.drawText(label, xDownloadStart.toFloat(), textSizePx * 0.85f, paint)
+    paint.setShadowLayer(0f, 0f, 0f, 0)
   }
 
   /**

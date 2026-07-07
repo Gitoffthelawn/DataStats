@@ -57,6 +57,7 @@ data class ConfigUiState(
   val sparklineMode: Boolean = false,
   val showOnlyOnMobile: Boolean = false,
   val mobileOnlyMeter: Boolean = false,
+  val showNetworkTypeIcon: Boolean = false,
   val textSizeSp: Int = 10,
   val xPos: Int = 100,
   val intervalMs: Int = 1000,
@@ -84,6 +85,7 @@ data class MainScreenCallbacks(
   val onSparklineChange: (Boolean) -> Unit = {},
   val onShowOnlyOnMobileChange: (Boolean) -> Unit = {},
   val onMobileOnlyMeterChange: (Boolean) -> Unit = {},
+  val onShowNetworkTypeIconChange: (Boolean) -> Unit = {},
   val onTextSizeDelta: (Int) -> Unit = {},
   val onXPosChange: (Int) -> Unit = {},
   val onIntervalChange: (Int) -> Unit = {},
@@ -273,6 +275,15 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
       description = stringResource(R.string.desc_hide_when_in_fullscreen),
       checked = state.hideWhenInFullscreen,
       onCheckedChange = callbacks.onHideWhenInFullscreenChange,
+    )
+    RowDivider()
+
+    // Network type badge (W/M/E/V)
+    SwitchRow(
+      title = stringResource(R.string.config_show_network_type_icon),
+      description = stringResource(R.string.desc_show_network_type_icon),
+      checked = state.showNetworkTypeIcon,
+      onCheckedChange = callbacks.onShowNetworkTypeIconChange,
     )
   }
 }
