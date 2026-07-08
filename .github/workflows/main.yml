@@ -34,5 +34,16 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
+    # build (= assembleRelease を含む) は署名設定がない CI では失敗するため、
+    # デバッグビルド + ユニットテスト + lint を明示的に実行する
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew assembleDebug testDebugUnitTest lintDebug
+
+    - name: Upload test reports
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports
+        path: |
+          app/build/reports/tests/
+          app/build/reports/lint-results-debug.html

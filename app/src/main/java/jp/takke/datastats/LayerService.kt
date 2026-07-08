@@ -28,7 +28,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.preference.PreferenceManager
 import jp.takke.util.MyLog
 import jp.takke.util.TkUtil
-import kotlin.math.log10
 
 class LayerService : Service(), View.OnAttachStateChangeListener {
 
@@ -850,25 +849,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   }
 
   private fun convertBytesToPerThousand(bytes: Long): Int {
-
-    if (!Config.logBar) {
-      return if (bytes / 1024 > Config.barMaxKB) 1000 else (bytes / Config.barMaxKB).toInt()   // [0, 1000]
-    } else {
-      // 100KB基準値
-      val normalBytes = bytes * 100 / Config.barMaxKB
-      return if (normalBytes < 1) {
-        0
-      } else {
-        // max=100KB
-        //   1KB -> 300
-        //  10KB -> 400
-        // 100KB -> 500
-        val log = (log10(normalBytes.toDouble()) * 100).toInt()
-
-        // max=100KB -> 500*2 = 1000
-        log * 2
-      }
-    }
+    // 変換ロジックはテスト可能な純粋関数として MyTrafficUtil に切り出している
+    return MyTrafficUtil.convertBytesToPerThousand(bytes, Config.logBar, Config.barMaxKB)
   }
 
   private fun gatherTraffic() {

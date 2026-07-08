@@ -24,6 +24,7 @@ v4.0.0 (2026.07.xx)
 - Perf: replace 3-point Lagrange interpolation with 2-point linear interpolation (removes DoubleArray allocation and overshoot guards)
 - Cleanup: migrate the remaining Java sources (Config, C, MyLog, IOUtil, TkConfig, TkConsts) to Kotlin; the project is now 100% Kotlin
 - Cleanup: replace all remaining deprecated APIs (Resources.getColor, scaledDensity, status_bar_height lookup, PowerManager.isScreenOn, TYPE_TOAST dead code); text sizing now supports Android 14+ non-linear font scaling
+- Dev: add unit tests for the speed formatting / bar scaling logic and run them (with lint) on GitHub Actions CI
 - UI: first-launch onboarding screen explaining why the overlay / notification / battery-optimization settings are needed; the resident service is turned on by default when onboarding completes
 - UI: revamp the settings screen with Jetpack Compose + Material 3 (DayNight, Material You dynamic colors), grouped into Display / Behavior / Startup sections with per-setting descriptions
 - Refactor: route force-redraw requests through AIDL (ILayerService.forceRedraw) instead of Activity poking the SurfaceView static

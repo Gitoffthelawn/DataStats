@@ -4,37 +4,41 @@ import android.content.res.Resources
 import androidx.core.content.res.ResourcesCompat
 import java.io.BufferedReader
 import java.io.FileReader
+import kotlin.math.log10
 
 object MyTrafficUtil {
 
   /**
    * 速度[バイト/秒]を表示用文字列に変換する。
-   * `Config.unitTypeBps` / `Config.autoUnitScale` を反映し、
    * オーバーレイ(MySurfaceView)と設定画面のライブプレビューで共通に使う。
+   * `bps` / `autoScale` は省略時に Config の設定値を使う(テストでは明示指定する)。
    *
    * 例: "12.3KB/s" / "1.5MB/s" / "8.0Kbps"
    */
-  fun formatSpeedText(bytesPerSec: Long): String {
+  fun formatSpeedText(
+    bytesPerSec: Long,
+    bps: Boolean = Config.unitTypeBps,
+    autoScale: Boolean = Config.autoUnitScale,
+  ): String {
     if (bytesPerSec < 0) {
       return ""
     }
 
-    val bps = Config.unitTypeBps
     // bps モードでは bits に変換して桁判定する
     val value = if (bps) bytesPerSec * 8 else bytesPerSec
 
     // 単位接頭辞と除数を決定
-    // autoUnitScale = false の場合、既存互換のため常に K(KB/s or Kbps)を使う
+    // autoScale = false の場合、既存互換のため常に K(KB/s or Kbps)を使う
     val kb = 1024L
     val mb = kb * 1024L
     val gb = mb * 1024L
     val divisor: Long
     val prefix: String
     when {
-      Config.autoUnitScale && value >= gb -> {
+      autoScale && value >= gb -> {
         divisor = gb; prefix = "G"
       }
-      Config.autoUnitScale && value >= mb -> {
+      autoScale && value >= mb -> {
         divisor = mb; prefix = "M"
       }
       else -> {
@@ -51,6 +55,33 @@ object MyTrafficUtil {
     }
     val suffix = if (bps) "bps" else "B/s"
     return "$whole.$dec$prefix$suffix"
+  }
+
+  /**
+   * 通信量[バイト]をバー表示用の千分率 [0, 1000] に変換する。
+   *
+   * @param logBar true なら対数スケール、false なら線形スケール
+   * @param barMaxKB バーが振り切れる速度[KB]
+   */
+  fun convertBytesToPerThousand(bytes: Long, logBar: Boolean, barMaxKB: Int): Int {
+    if (!logBar) {
+      return if (bytes / 1024 > barMaxKB) 1000 else (bytes / barMaxKB).toInt()   // [0, 1000]
+    } else {
+      // 100KB基準値
+      val normalBytes = bytes * 100 / barMaxKB
+      return if (normalBytes < 1) {
+        0
+      } else {
+        // max=100KB
+        //   1KB -> 300
+        //  10KB -> 400
+        // 100KB -> 500
+        val log = (log10(normalBytes.toDouble()) * 100).toInt()
+
+        // max=100KB -> 500*2 = 1000
+        log * 2
+      }
+    }
   }
 
 

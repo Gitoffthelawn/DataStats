@@ -140,6 +140,8 @@ dependencies {
     implementation libs.androidx.compose.material3
     implementation libs.androidx.compose.material.icons.extended
     debugImplementation libs.androidx.compose.ui.tooling
+
+    testImplementation libs.junit
 }
 
 // AGP 9 は release ビルド時に compose-group-mapping:2.2.10 を要求するが
