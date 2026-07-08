@@ -18,6 +18,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.core.content.res.ResourcesCompat
 import jp.takke.util.MyLog
+import jp.takke.util.TkUtil
 import java.util.LinkedList
 
 class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
@@ -200,7 +201,7 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
       if (mTrafficList.size <= 0) {
         return
       }
-      t = mTrafficList.last
+      t = mTrafficList.last()
     }
     val tx = t.tx
     val rx = t.rx
@@ -304,9 +305,9 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     }
 
 
-    val scaledDensity = resources.displayMetrics.scaledDensity
+    val displayMetrics = resources.displayMetrics
     val textSizeSp = Config.textSizeSp
-    val textSizePx = textSizeSp * scaledDensity
+    val textSizePx = TkUtil.spToPx(textSizeSp.toFloat(), displayMetrics)
 
     // upload text
     paint.typeface = Typeface.MONOSPACE
@@ -338,7 +339,7 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
     // upload/download mark
     val paintUd = mPaintUd
-    val udMarkSize = (textSizeSp + 2) * scaledDensity
+    val udMarkSize = TkUtil.spToPx((textSizeSp + 2).toFloat(), displayMetrics)
     run {
       if (mUploadMarkBitmap == null) {
         mUploadMarkBitmap =

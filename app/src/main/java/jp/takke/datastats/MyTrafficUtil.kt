@@ -1,6 +1,7 @@
 package jp.takke.datastats
 
 import android.content.res.Resources
+import androidx.core.content.res.ResourcesCompat
 import java.io.BufferedReader
 import java.io.FileReader
 
@@ -55,23 +56,23 @@ object MyTrafficUtil {
 
   fun getTextShadowColorByBytes(resources: Resources, bytes: Long): Int {
     if (bytes < Config.middleLimit) {
-      return resources.getColor(R.color.textShadowColorLow)
+      return ResourcesCompat.getColor(resources, R.color.textShadowColorLow, null)
     }
     if (bytes < Config.highLimit) {
-      return resources.getColor(R.color.textShadowColorMiddle)
+      return ResourcesCompat.getColor(resources, R.color.textShadowColorMiddle, null)
     }
-    return resources.getColor(R.color.textShadowColorHigh)
+    return ResourcesCompat.getColor(resources, R.color.textShadowColorHigh, null)
   }
 
 
   fun getTextColorByBytes(resources: Resources, bytes: Long): Int {
     if (bytes < Config.middleLimit) {
-      return resources.getColor(R.color.textColorLow)
+      return ResourcesCompat.getColor(resources, R.color.textColorLow, null)
     }
     if (bytes < Config.highLimit) {
-      return resources.getColor(R.color.textColorMiddle)
+      return ResourcesCompat.getColor(resources, R.color.textColorMiddle, null)
     }
-    return resources.getColor(R.color.textColorHigh)
+    return ResourcesCompat.getColor(resources, R.color.textColorHigh, null)
   }
 
 

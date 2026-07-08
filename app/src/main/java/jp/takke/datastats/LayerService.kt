@@ -24,8 +24,10 @@ import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.content.edit
+import androidx.core.view.WindowInsetsCompat
 import androidx.preference.PreferenceManager
 import jp.takke.util.MyLog
+import jp.takke.util.TkUtil
 import kotlin.math.log10
 
 class LayerService : Service(), View.OnAttachStateChangeListener {
@@ -101,11 +103,11 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   // 依存する Config 値・画面幅・全画面状態が変わらない限り再計算をスキップして毎秒の負荷を減らす
   private var mLayoutCached = false
   private var mCachedTextSizeSp = -1
-  private var mCachedScaledDensity = 0f
+  private var mCachedDensity = 0f
+  private var mCachedFontScale = 0f
   private var mCachedScreenWidth = -1
   private var mCachedXPos = -1
   private var mCachedInFullScreen = false
-  private var mCachedStatusBarHeight = -1
 
   // 実ディスプレイ高さのキャッシュ(回転時に onConfigurationChanged で無効化)
   private var mCachedDisplayRealHeight = -1
@@ -142,12 +144,13 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     }
   }
 
-  @Suppress("DEPRECATION")
   private val myLayerType: Int
-    get() = when {
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
-      else -> WindowManager.LayoutParams.TYPE_TOAST
+    get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+    } else {
+      // M〜N 向け(minSdk 23 のため TYPE_TOAST フォールバックは不要)
+      @Suppress("DEPRECATION")
+      WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
     }
 
   inner class LocalBinder : ILayerService.Stub() {
@@ -684,19 +687,23 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     val mySurfaceView = view.findViewById<View>(R.id.mySurfaceView) ?: return
 
     val displayMetrics = resources.displayMetrics
-    val scaledDensity = displayMetrics.scaledDensity
+    // sp→px 変換は density とフォントスケール設定に依存するため両方をキャッシュキーにする
+    // (非線形フォントスケーリング対応のため換算係数のキャッシュは不可)
+    val density = displayMetrics.density
+    val fontScale = resources.configuration.fontScale
     val textSizeSp = Config.textSizeSp
     val screenWidth = view.width
     val xPos = Config.xPos
 
     // 依存する値がすべて前回と同じなら再計算・レイアウト適用をスキップする
-    // (毎秒 showTraffic() から呼ばれるため、getIdentifier / setLayoutParams / setPadding の
+    // (毎秒 showTraffic() から呼ばれるため、setLayoutParams / setPadding の
     //  再実行を避けるためのキャッシュ)
     // ※visibility は showTraffic() 側の applyOverlayVisibility() で毎回反映する
     if (
       mLayoutCached &&
       textSizeSp == mCachedTextSizeSp &&
-      scaledDensity == mCachedScaledDensity &&
+      density == mCachedDensity &&
+      fontScale == mCachedFontScale &&
       screenWidth == mCachedScreenWidth &&
       xPos == mCachedXPos &&
       inFullScreen == mCachedInFullScreen
@@ -704,7 +711,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       return
     }
     mCachedTextSizeSp = textSizeSp
-    mCachedScaledDensity = scaledDensity
+    mCachedDensity = density
+    mCachedFontScale = fontScale
     mCachedScreenWidth = screenWidth
     mCachedXPos = xPos
     mCachedInFullScreen = inFullScreen
@@ -717,29 +725,33 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     // iconSize = textSize+4
     // textAreaWidth = (textSize+2) * 6
     val widgetWidthSp = (textSizeSp + 4 + (textSizeSp + 2) * 6) * 2
-    val widgetWidth = (widgetWidthSp * scaledDensity).toInt()
+    val widgetWidth = TkUtil.spToPx(widgetWidthSp.toFloat(), displayMetrics).toInt()
 
     val params = mySurfaceView.layoutParams
     params.width = widgetWidth
     // height = textSize * 1.25
-    params.height = (textSizeSp * 1.25 * scaledDensity).toInt()
+    params.height = TkUtil.spToPx(textSizeSp * 1.25f, displayMetrics).toInt()
     mySurfaceView.layoutParams = params
 
     //--------------------------------------------------
     // set padding (x pos)
     //--------------------------------------------------
-    val statusBarHeight = if (inFullScreen) 0 else getStatusBarHeightCached()
+    val statusBarHeight = if (inFullScreen) 0 else getStatusBarHeight()
     val right = (screenWidth - widgetWidth) * (100 - xPos) / 100
     view.setPadding(0, statusBarHeight, right, 0)
   }
 
-  /** 端末のステータスバー高さ。実質不変なので初回のみ resource lookup する */
-  private fun getStatusBarHeightCached(): Int {
-    if (mCachedStatusBarHeight >= 0) return mCachedStatusBarHeight
-    val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-    mCachedStatusBarHeight =
-      if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
-    return mCachedStatusBarHeight
+  /**
+   * 端末のステータスバー高さを WindowInsets から取得する。
+   * (旧実装の内部リソース `status_bar_height` の `getIdentifier` 参照は非公開 API のため廃止)
+   * `getInsetsIgnoringVisibility` を使うことで、一時的にステータスバーが隠れていても安定値を返す。
+   */
+  private fun getStatusBarHeight(): Int {
+    val view = mView ?: return 0
+    val rootInsets = view.rootWindowInsets ?: return 0
+    return WindowInsetsCompat.toWindowInsetsCompat(rootInsets, view)
+      .getInsetsIgnoringVisibility(WindowInsetsCompat.Type.statusBars())
+      .top
   }
 
   /**
@@ -1047,8 +1059,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
           }
 
 
-          @Suppress("DEPRECATION")
-          if (!powerManager.isScreenOn) {
+          if (!powerManager.isInteractive) {
             MyLog.d("LayerService\$GatherThread: not interactive")
             // onScreenOff は mSleeping の書き換えと mHandler.postDelayed の登録を行うため
             // メインスレッドに委譲する(ワーカースレッド直接呼び出しは競合の原因になる)
