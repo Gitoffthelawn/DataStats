@@ -17,6 +17,7 @@ v4.0.0 (2026.07.xx)
 - i18n: add Simplified Chinese (zh-rCN), Korean (ko) and Spanish (es) translations
 - Fix: overlay X position stayed anchored to the old screen width after rotation; the service now re-applies the WindowManager LayoutParams and invalidates its cached layout on configuration change / overlay resize
 - Feature: optional sparkline overlay showing the last ~60 seconds of upload/download traffic on top of the meter (toggle in Display section)
+- Perf: remove the legacy AlarmManager keep-alive that woke the service every 60 seconds; recovery after a process kill now relies on the foreground service + START_STICKY, saving battery
 - Perf: cache updateWidgetSize inputs to skip layout / getIdentifier calls when nothing changed each second
 - Perf: reuse Paint / Matrix / cached Resources values in MySurfaceView.myDrawFrame instead of per-frame allocation
 - Perf: MyLog.d { ... } inline lambda overload skips string concatenation when debug logging is disabled

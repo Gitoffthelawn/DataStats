@@ -29,12 +29,6 @@ object C {
 
   const val DEFAULT_TEXT_SIZE_SP = 8
 
-  // 初期Alarmの遅延時間[ms]
-  const val ALARM_STARTUP_DELAY_MSEC = 1000
-
-  // Service維持のためのAlarmの更新間隔[ms]
-  const val ALARM_INTERVAL_MSEC = 60 * 1000
-
   const val SCREEN_ON_LOGIC_DELAY_MSEC = 3000
   const val SCREEN_OFF_LOGIC_DELAY_MSEC = 3000
 }

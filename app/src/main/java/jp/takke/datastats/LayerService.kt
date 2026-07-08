@@ -1,8 +1,6 @@
 package jp.takke.datastats
 
 import android.annotation.SuppressLint
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -28,7 +26,6 @@ import android.widget.Toast
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import jp.takke.util.MyLog
-import jp.takke.util.TkUtil
 import kotlin.math.log10
 
 class LayerService : Service(), View.OnAttachStateChangeListener {
@@ -78,8 +75,6 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   @Volatile
   private var mSleeping = false
-
-  private var mServiceAlive = true
 
   private var mLastRxBytes: Long = 0
   private var mLastTxBytes: Long = 0
@@ -183,10 +178,6 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       // ※ startForeground は再度呼んでも通知を更新するのでhide不要
       showNotification()
 
-      // Alarmループ開始
-      stopAlarm()
-      scheduleNextTime(C.ALARM_STARTUP_DELAY_MSEC)
-
       // 通信量取得スレッド再起動
       if (mThread == null) {
         startGatherThread()
@@ -284,9 +275,6 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       // 通知(常駐)
       showNotification()
 
-      // Alarmループ開始
-      scheduleNextTime(C.ALARM_STARTUP_DELAY_MSEC)
-
     }, C.SCREEN_ON_LOGIC_DELAY_MSEC.toLong())
   }
 
@@ -328,9 +316,6 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
       // 通知は残したままにする(startForegroundで表示している通知はcancelでは消えないため、
       // 画面OFF中はスレッドだけ止めて通知は維持する)
-
-      // アラーム停止
-      stopAlarm()
 
     }, C.SCREEN_OFF_LOGIC_DELAY_MSEC.toLong())
   }
@@ -497,9 +482,6 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mView?.addOnAttachStateChangeListener(this)
 
     Config.loadPreferences(this)
-
-    // 定期処理開始
-//        scheduleNextTime(intervalMs)
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -570,17 +552,15 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       // 通知(ボタン変更)
       showNotification()
 
-      // Alarmループ続行(タイル起点のコールドスタートでも keep-alive を確実に張る)
-      scheduleNextTime(C.ALARM_INTERVAL_MSEC)
-
       return START_STICKY
     }
 
     // 通知(常駐)
     showNotification()
 
-    // Alarmループ続行
-    scheduleNextTime(C.ALARM_INTERVAL_MSEC)
+    // ※かつては AlarmManager による 60 秒周期の keep-alive ループを張っていたが、
+    //  Doze 環境では発火が遅延・抑制され効果が薄い一方でバッテリーを消費するため廃止した。
+    //  プロセス kill 後の復帰は FGS + START_STICKY によるシステムの再起動に任せる。
 
     return START_STICKY
   }
@@ -951,65 +931,15 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mLastTxBytes = totalTxBytes
   }
 
-  private fun scheduleNextTime(intervalMs: Int) {
-
-    // サービス終了の指示が出ていたら，次回の予約はしない。
-    if (!mServiceAlive) {
-      return
-    }
-    if (mSleeping) {
-      return
-    }
-
-    val now = System.currentTimeMillis()
-
-    // アラームをセット
-    val intent = Intent(this, this.javaClass)
-    val alarmSender = PendingIntent.getService(
-      this,
-      0,
-      intent,
-      TkUtil.getPendingIntentImmutableFlagIfOverM()
-    )
-    // ※onStartCommandが呼ばれるように設定する
-
-    val am = this.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    am.set(AlarmManager.RTC, now + intervalMs, alarmSender)
-
-//        MyLog.d(" scheduled[" + intervalMs + "]");
-  }
-
-  private fun stopAlarm() {
-
-    // サービス名を指定
-    val intent = Intent(this, this.javaClass)
-
-    // アラームを解除
-    val pendingIntent = PendingIntent.getService(
-      this,
-      0, // ここを-1にすると解除に成功しない
-      intent,
-      PendingIntent.FLAG_UPDATE_CURRENT or TkUtil.getPendingIntentImmutableFlagIfOverM()
-    )
-
-    val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    am.cancel(pendingIntent)
-    // @see "http://creadorgranoeste.blogspot.com/2011/06/alarmmanager.html"
-  }
-
   override fun onDestroy() {
     super.onDestroy()
 
     MyLog.d("LayerService.onDestroy")
 
-    mServiceAlive = false
-
     // hide_and_resume の復帰処理等、保留中の遅延タスクを掃除する
     // (破棄後に発火すると破棄済みインスタンス上で通知再表示などが走ってしまう)
     mHandler.removeCallbacksAndMessages(null)
     mResumeRunnable = null
-
-    stopAlarm()
 
     mNotificationPresenter.hideNotification()
 
