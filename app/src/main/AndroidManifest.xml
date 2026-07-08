@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -46,12 +47,14 @@
         <receiver android:name=".SwitchButtonReceiver" />
 
         <!-- クイック設定タイル: オーバーレイの表示/非表示を切り替える -->
+        <!-- QS タイルは API 24+ のみ SystemUI から bind される(API 23 では登録されるだけで無害) -->
         <service
             android:name=".OverlayTileService"
             android:exported="true"
             android:icon="@drawable/ic_qs_speed"
             android:label="@string/tile_label"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:ignore="NewApi">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>

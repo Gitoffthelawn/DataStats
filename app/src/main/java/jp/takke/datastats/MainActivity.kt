@@ -1,7 +1,6 @@
 package jp.takke.datastats
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -11,9 +10,7 @@ import android.net.TrafficStats
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.os.PowerManager
 import android.os.RemoteException
 import android.os.SystemClock
@@ -155,17 +152,31 @@ class MainActivity : ComponentActivity() {
   private fun startLiveTrafficPolling() {
     if (mLiveTrafficJob?.isActive == true) return
     mLiveTrafficJob = lifecycleScope.launch {
-      var lastTx = TrafficStats.getTotalTxBytes()
-      var lastRx = TrafficStats.getTotalRxBytes()
+      // オーバーレイと同じ計測ソースを使う(mobileOnlyMeter 有効時はモバイル通信量のみ)
+      fun currentTxBytes() =
+        if (Config.mobileOnlyMeter) TrafficStats.getMobileTxBytes() else TrafficStats.getTotalTxBytes()
+
+      fun currentRxBytes() =
+        if (Config.mobileOnlyMeter) TrafficStats.getMobileRxBytes() else TrafficStats.getTotalRxBytes()
+
+      var lastMobileOnly = Config.mobileOnlyMeter
+      var lastTx = currentTxBytes()
+      var lastRx = currentRxBytes()
       var lastTime = SystemClock.elapsedRealtime()
       while (isActive) {
         delay(1000L)
         val now = SystemClock.elapsedRealtime()
-        val tx = TrafficStats.getTotalTxBytes()
-        val rx = TrafficStats.getTotalRxBytes()
+        val mobileOnly = Config.mobileOnlyMeter
+        val tx = currentTxBytes()
+        val rx = currentRxBytes()
         val elapsed = now - lastTime
         val unsupported = TrafficStats.UNSUPPORTED.toLong()
-        if (tx != unsupported && rx != unsupported && elapsed > 0 && lastTx > 0 && lastRx > 0) {
+        if (mobileOnly != lastMobileOnly) {
+          // 計測ソースが切り替わった直後は diff が異常値になるため 1 サンプル読み飛ばす
+          lastMobileOnly = mobileOnly
+        } else if (
+          tx != unsupported && rx != unsupported && elapsed > 0 && lastTx > 0 && lastRx > 0
+        ) {
           val diffTx = maxOf(0L, tx - lastTx)
           val diffRx = maxOf(0L, rx - lastRx)
           val txBps = diffTx * 1000L / elapsed
@@ -187,9 +198,11 @@ class MainActivity : ComponentActivity() {
   private fun shouldShowOnboarding(): Boolean {
     val pref = PreferenceManager.getDefaultSharedPreferences(this)
     val onboarded = pref.getBoolean(C.PREF_KEY_ONBOARDING_DONE, false)
+    // オンボーディング完了後でもオーバーレイ権限が剥奪されていたら再表示し、
+    // 再許可の導線にする(でないと権限を再要求する手段がなくアプリが沈黙したままになる)
+    if (onboarded) return !mOnboardingState.overlayGranted
     // 初回起動時、または明示的な onboardingDone フラグが立っていない場合はオンボーディングを表示する。
     // 既に必須権限がすべて揃っている場合(想定外だが)はスキップして通常フローに戻す。
-    if (onboarded) return false
     return !mOnboardingState.canProceed
   }
 
@@ -302,6 +315,8 @@ class MainActivity : ComponentActivity() {
     onHideWhenInFullscreenChange = { checked ->
       savePref { putBoolean(C.PREF_KEY_HIDE_WHEN_IN_FULLSCREEN, checked) }
       mUiState = mUiState.copy(hideWhenInFullscreen = checked)
+      // restart で Config を再読込し、画面を開いたまま切替が即座に効くようにする
+      doRestartService()
     },
     onLogBarChange = { checked ->
       savePref { putBoolean(C.PREF_KEY_LOGARITHM_BAR, checked) }
@@ -397,9 +412,14 @@ class MainActivity : ComponentActivity() {
         stopLiveTrafficPolling()
       }
     },
-    onStart = { doRestartService() },
+    onStart = {
+      // 明示的な開始操作なので、通知ボタン/QSタイルで非表示にしていた状態を解除して確実に表示する
+      savePref { putBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, true) }
+      doRestartService()
+    },
     onStop = { doStopService() },
     onRestart = {
+      savePref { putBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, true) }
       doStopService()
       doRestartService()
     },
@@ -457,15 +477,22 @@ class MainActivity : ComponentActivity() {
 
   override fun onDestroy() {
 
-    // onServiceConnected 前に onDestroy が来た場合、mServiceIF が null でも bind は生きているため
-    // mBound で判定する(接続状態ではリークが発生する)
+    unbindServiceIfBound()
+
+    super.onDestroy()
+  }
+
+  /**
+   * bind 済みなら unbind する。
+   * onServiceConnected 前でも bind は生きているため、
+   * 接続状態(mServiceIF)ではなく mBound で判定する(接続状態判定ではリークが発生する)。
+   */
+  private fun unbindServiceIfBound() {
     if (mBound) {
       unbindService(mServiceConnection)
       mBound = false
       mServiceIF = null
     }
-
-    super.onDestroy()
   }
 
   private fun doStopService() {
@@ -478,11 +505,7 @@ class MainActivity : ComponentActivity() {
       }
     }
 
-    if (mBound) {
-      unbindService(mServiceConnection)
-      mBound = false
-      mServiceIF = null
-    }
+    unbindServiceIfBound()
   }
 
   private fun doRestartService() {
@@ -500,10 +523,10 @@ class MainActivity : ComponentActivity() {
       doBindService()
     }
 
-    mUiState = mUiState.copy(previewLabel = "-")
+    // プレビュー状態を解除する(ラベルとスライダー位置の両方をリセットして表示のずれを防ぐ)
+    mUiState = mUiState.copy(previewLabel = "-", previewSlider = 0)
   }
 
-  @SuppressLint("SetTextI18n")
   private fun updateTextSize(delta: Int) {
 
     val newSize = Config.textSizeSp + delta
@@ -513,27 +536,9 @@ class MainActivity : ComponentActivity() {
     savePref { putInt(C.PREF_KEY_TEXT_SIZE_SP, Config.textSizeSp) }
     mUiState = mUiState.copy(textSizeSp = Config.textSizeSp)
 
-    Config.loadPreferences(this)
-
-    // 直接 static 変数を書き換える裏口的な結合を避けるため AIDL 経由で強制再描画を伝達する
-    forceRedraw(1)
-
-    Handler(Looper.getMainLooper()).postDelayed({
-
-      forceRedraw(1)
-
-      doRestartService()
-    }, 1)
-  }
-
-  private fun forceRedraw(previewBytes: Long) {
-    if (mServiceIF != null) {
-      try {
-        mServiceIF!!.forceRedraw(previewBytes)
-      } catch (e: RemoteException) {
-        MyLog.e(e)
-      }
-    }
+    // restart() が Config 再読込と強制再描画(showTrafficWithForceRedraw)を行うため、
+    // 旧実装の forceRedraw(1) + 1ms 遅延のダンスは不要
+    doRestartService()
   }
 
   private fun startSnapshot(previewBytes: Long) {

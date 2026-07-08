@@ -70,7 +70,7 @@ internal class NotificationPresenter(service: Service) {
     // show button
     if (!visibleOverlayView) {
       val switchIntent = Intent(service, SwitchButtonReceiver::class.java)
-      switchIntent.action = "show"
+      switchIntent.action = C.ACTION_SHOW
       val switchPendingIntent = PendingIntent.getBroadcast(
         service,
         0,
@@ -86,7 +86,7 @@ internal class NotificationPresenter(service: Service) {
     // hide button
     if (visibleOverlayView) {
       val switchIntent = Intent(service, SwitchButtonReceiver::class.java)
-      switchIntent.action = "hide"
+      switchIntent.action = C.ACTION_HIDE
       val switchPendingIntent = PendingIntent.getBroadcast(
         service,
         0,
@@ -102,7 +102,7 @@ internal class NotificationPresenter(service: Service) {
     // timer (hide and resume) button
     if (visibleOverlayView) {
       val switchIntent = Intent(service, SwitchButtonReceiver::class.java)
-      switchIntent.action = "hide_and_resume"
+      switchIntent.action = C.ACTION_HIDE_AND_RESUME
       val switchPendingIntent = PendingIntent.getBroadcast(
         service,
         0,

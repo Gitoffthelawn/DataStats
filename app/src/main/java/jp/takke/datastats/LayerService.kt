@@ -25,7 +25,8 @@ import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.core.os.postDelayed
+import androidx.core.content.edit
+import androidx.preference.PreferenceManager
 import jp.takke.util.MyLog
 import jp.takke.util.TkUtil
 import kotlin.math.log10
@@ -43,9 +44,10 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   /**
    * 全画面判定用のダミーオーバーレイ。
-   * 意図的に `FLAG_LAYOUT_IN_SCREEN` を付けずに WindowManager に追加することで、
-   * ステータスバーやナビゲーションバーの表示状態に応じて位置と描画サイズが変化する。
-   * `getLocationOnScreen()[1]` が 0 = ステータスバー領域がない = 全画面(イマーシブ)。
+   * `FLAG_LAYOUT_IN_SCREEN` を付けず、`fitInsetsTypes = statusBars or navigationBars` +
+   * `isFitInsetsIgnoringVisibility = false` を指定した MATCH_PARENT 窓は、
+   * system bars の可視状態に応じて描画サイズが変化する。
+   * そのためビュー高さ == 実ディスプレイ高さ なら全画面(イマーシブ)と判定できる。
    *
    * `TYPE_APPLICATION_OVERLAY` の `rootWindowInsets` が他アプリの immersive 切替を
    * 反映しない Android 14 の実機に対して、確実に検出するために利用する。
@@ -55,9 +57,17 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   // 現在のデフォルトネットワーク種別モニタ(mobileOnlyMeter / showOnlyOnMobile 用)
   private var mNetworkMonitor: NetworkTypeMonitor? = null
 
-  // ユーザが「表示中」を望んでいるか(通知の Show/Hide ボタンで切り替え)。
+  // ユーザが「表示中」を望んでいるか(通知の Show/Hide ボタン / QS タイルで切り替え)。
   // このフラグと「全画面時の一時非表示」を組み合わせて mView.visibility を決定する。
   private var mUserWantsVisible = true
+
+  // hide_and_resume による一時非表示中かどうか。
+  // ※あくまで一時的な状態なので prefs には永続化しない
+  //  (永続化すると 10 秒以内のプロセス死で「永久に非表示」になってしまうため)
+  private var mTemporarilyHidden = false
+
+  // hide_and_resume の復帰処理(show/hide 操作やサービス破棄でキャンセルできるよう保持する)
+  private var mResumeRunnable: Runnable? = null
 
   @Volatile
   private var mAttached = false
@@ -73,6 +83,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   private var mLastRxBytes: Long = 0
   private var mLastTxBytes: Long = 0
+
+  // 前回 gatherTraffic 時の計測ソース(true = モバイルのみ)。切替検出用
+  private var mLastCounterSourceMobile = false
 
   private var mLastLoopbackRxBytes: Long = 0
   private var mLastLoopbackTxBytes: Long = 0
@@ -96,9 +109,11 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   private var mCachedScaledDensity = 0f
   private var mCachedScreenWidth = -1
   private var mCachedXPos = -1
-  private var mCachedHideInFullscreen = false
   private var mCachedInFullScreen = false
   private var mCachedStatusBarHeight = -1
+
+  // 実ディスプレイ高さのキャッシュ(回転時に onConfigurationChanged で無効化)
+  private var mCachedDisplayRealHeight = -1
 
 
   // 通信量取得スレッド管理
@@ -147,9 +162,22 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
       MyLog.d("LayerService.restart")
 
+      // オーバーレイ権限なしで bind 経由の restart が来た場合、通知(startForeground)や
+      // スレッド起動を行うと「表示なしの常駐サービス」が復活してしまうため停止する
+      if (!mHasOverlayPermission) {
+        MyLog.w("LayerService.restart: no overlay permission -> stopSelf")
+        stopSelf()
+        return
+      }
+
       mSnapshot = false
 
       Config.loadPreferences(this@LayerService)
+
+      // ユーザ意図(Show/Hide)を prefs から同期する
+      // (アプリの Start ボタンは事前に true を書き込むため、明示的な開始で確実に再表示される)
+      mUserWantsVisible = PreferenceManager.getDefaultSharedPreferences(this@LayerService)
+        .getBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, true)
 
       // 通知(常駐)
       // ※ startForeground は再度呼んでも通知を更新するのでhide不要
@@ -168,14 +196,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       val mySurfaceView = mView?.findViewById<MySurfaceView>(R.id.mySurfaceView)
       mySurfaceView?.applyInterpolationConfig()
 
-      // 補間モードでは setTraffic の直接描画がスキップされるため、
-      // 切替直後の 1 フレームを sForceRedraw で強制的に描画する
-      MySurfaceView.sForceRedraw = true
-      try {
-        showTraffic()
-      } finally {
-        MySurfaceView.sForceRedraw = false
-      }
+      showTrafficWithForceRedraw()
     }
 
     @Throws(RemoteException::class)
@@ -209,13 +230,17 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       mSnapshot = true
       mSnapshotBytes = previewBytes
 
-      // 補間モードや同一フレームスキップを無効化して 1 フレーム強制描画する
-      MySurfaceView.sForceRedraw = true
-      try {
-        showTraffic()
-      } finally {
-        MySurfaceView.sForceRedraw = false
-      }
+      showTrafficWithForceRedraw()
+    }
+  }
+
+  /** 補間モードや同一フレームスキップを無効化して 1 フレーム強制描画する */
+  private fun showTrafficWithForceRedraw() {
+    MySurfaceView.sForceRedraw = true
+    try {
+      showTraffic()
+    } finally {
+      MySurfaceView.sForceRedraw = false
     }
   }
 
@@ -324,10 +349,12 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     MyLog.d("LayerService.onBind")
 
-    // 定期取得スレッド開始
-    startGatherThread()
-
-//        showTraffic()
+    // オーバーレイ権限がない場合はスレッドを起動しない
+    // (BIND_AUTO_CREATE で権限なしのままインスタンスが生き残る経路への対策)
+    if (mHasOverlayPermission) {
+      // 定期取得スレッド開始
+      startGatherThread()
+    }
 
     return mBinder
   }
@@ -356,6 +383,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     //  2) WindowManager オーバーレイは MATCH_PARENT でも自動リサイズしないことがあるため
     //     LayoutParams を再適用して新しい画面幅で確実に再レイアウトさせる
     mLayoutCached = false
+    mCachedDisplayRealHeight = -1
     val view = mView ?: return
     val params = mOverlayLayoutParams ?: return
     try {
@@ -386,8 +414,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     // ユーザ意図(Show/Hide 状態)を prefs から復元
     // ※ QS タイルからの切替を LayerService 再作成後も引き継ぐため
-    mUserWantsVisible = androidx.preference.PreferenceManager
-      .getDefaultSharedPreferences(this)
+    mUserWantsVisible = PreferenceManager.getDefaultSharedPreferences(this)
       .getBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, true)
 
     // Viewからインフレータを作成する
@@ -422,8 +449,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mView = layoutInflater.inflate(R.layout.overlay, null) as MyRelativeLayout
 
     // 全画面状態の変化を次回の更新タイミングを待たず即座に表示へ反映する
+    // (showTraffic 冒頭の applyOverlayVisibility が可視性も更新する)
     mView?.onFullScreenChangedListener = {
-      applyOverlayVisibility()
       showTraffic()
     }
 
@@ -501,30 +528,50 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     }
 
     //--------------------------------------------------
-    // SwitchButtonReceiver からの処理
+    // 通知ボタン / QS タイルからの処理
     //--------------------------------------------------
     if (action != null) {
       when (action) {
-        "show" -> setUserWantsVisible(true)
+        C.ACTION_SHOW -> {
+          cancelPendingResume()
+          mTemporarilyHidden = false
+          setUserWantsVisible(true)
+        }
 
-        "hide" -> setUserWantsVisible(false)
-
-        "hide_and_resume" -> {
+        C.ACTION_HIDE -> {
+          cancelPendingResume()
+          mTemporarilyHidden = false
           setUserWantsVisible(false)
-          mHandler.postDelayed(10000L) {
-            setUserWantsVisible(true)
+        }
+
+        C.ACTION_HIDE_AND_RESUME -> {
+          // 一時非表示は prefs に永続化しない(10 秒以内のプロセス死で永久非表示になるのを防ぐ)
+          cancelPendingResume()
+          mTemporarilyHidden = true
+          applyOverlayVisibility()
+          val resume = Runnable {
+            mResumeRunnable = null
+            mTemporarilyHidden = false
+            applyOverlayVisibility()
             showNotification()
           }
+          mResumeRunnable = resume
+          mHandler.postDelayed(resume, HIDE_AND_RESUME_DELAY_MSEC)
           Toast.makeText(
             this,
             getString(R.string.close_temporarily_resume_after_10_seconds),
             Toast.LENGTH_SHORT
           ).show()
         }
+
+        else -> MyLog.w("LayerService.onStartCommand: unknown action[$action]")
       }
 
       // 通知(ボタン変更)
       showNotification()
+
+      // Alarmループ続行(タイル起点のコールドスタートでも keep-alive を確実に張る)
+      scheduleNextTime(C.ALARM_INTERVAL_MSEC)
 
       return START_STICKY
     }
@@ -539,8 +586,14 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   }
 
   private fun showNotification() {
-    // 通知のボタン(Show/Hide)はユーザ意図に従う。全画面による一時非表示は反映しない。
-    mNotificationPresenter.showNotification(mUserWantsVisible)
+    // 通知のボタン(Show/Hide)はユーザ意図と一時非表示状態に従う。全画面による自動非表示は反映しない。
+    mNotificationPresenter.showNotification(mUserWantsVisible && !mTemporarilyHidden)
+  }
+
+  /** hide_and_resume の保留中の復帰処理をキャンセルする */
+  private fun cancelPendingResume() {
+    mResumeRunnable?.let { mHandler.removeCallbacks(it) }
+    mResumeRunnable = null
   }
 
   /**
@@ -549,13 +602,22 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
    */
   private fun setUserWantsVisible(value: Boolean) {
     mUserWantsVisible = value
-    androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
-      .edit()
-      .putBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, value)
-      .apply()
+    PreferenceManager.getDefaultSharedPreferences(this).edit {
+      putBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, value)
+    }
     applyOverlayVisibility()
     // QS タイルの表示状態を最新化(タイルが listening 中なら onStartListening が再度呼ばれて更新される)
-    OverlayTileService.requestTileUpdate(this)
+    requestOverlayTileUpdate(this)
+  }
+
+  /**
+   * 現在の全画面(イマーシブ)状態。
+   * WindowInsets ベースの判定(MyRelativeLayout)とダミー窓ベースの判定(detector)を
+   * どちらか true なら全画面とみなす。Android 14 では前者が更新されないことがあるため二重化。
+   */
+  private fun isInFullScreenNow(): Boolean {
+    val view = mView ?: return false
+    return view.isFullScreen || isFullScreenViaDetector()
   }
 
   /**
@@ -565,22 +627,25 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
    * Android 14 では `mySurfaceView.visibility = GONE` だけでは描画残りが起きるケースが
    * あるため、親の `mView.visibility` 自体を切り替える方針とする。
    */
-  private fun applyOverlayVisibility() {
+  private fun applyOverlayVisibility(inFullScreen: Boolean = isInFullScreenNow()) {
     val view = mView ?: return
-    val hidingByFullscreen =
-      Config.hideWhenInFullscreen && (view.isFullScreen || isFullScreenViaDetector())
+    val hidingByFullscreen = Config.hideWhenInFullscreen && inFullScreen
     // showOnlyOnMobile: 現在の接続がモバイル以外なら非表示にする(VPN 経由も非モバイル扱い)
     val hidingByNonMobile =
       Config.showOnlyOnMobile &&
               mNetworkMonitor?.currentType != NetworkTypeMonitor.NetworkType.MOBILE
     val target =
-      if (mUserWantsVisible && !hidingByFullscreen && !hidingByNonMobile) View.VISIBLE else View.GONE
+      if (mUserWantsVisible && !mTemporarilyHidden && !hidingByFullscreen && !hidingByNonMobile) {
+        View.VISIBLE
+      } else {
+        View.GONE
+      }
     if (view.visibility != target) {
       MyLog.d {
         "applyOverlayVisibility: " +
                 (if (target == View.VISIBLE) "VISIBLE" else "GONE") +
-                " (userWants=$mUserWantsVisible, hidingByFullscreen=$hidingByFullscreen" +
-                ", hidingByNonMobile=$hidingByNonMobile)"
+                " (userWants=$mUserWantsVisible, temporarilyHidden=$mTemporarilyHidden" +
+                ", hidingByFullscreen=$hidingByFullscreen, hidingByNonMobile=$hidingByNonMobile)"
       }
       view.visibility = target
     }
@@ -588,22 +653,23 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   private fun showTraffic() {
 
-//        MyLog.d("LayerService.showTraffic, attached[" + mAttached + "]");
-
     if (!mAttached) {
       return
     }
+
+    // 全画面状態は insets/detector の二重評価があるため 1 回だけ計算して使い回す
+    val inFullScreen = isInFullScreenNow()
 
     // 可視性判定はキャッシュに乗せず毎回評価する。
     // (showOnlyOnMobile / hideWhenInFullscreen / mUserWantsVisible は
     //  updateWidgetSize のキャッシュキーに含まれておらず、
     //  cache hit で早期 return されると反映されないため)
-    applyOverlayVisibility()
+    applyOverlayVisibility(inFullScreen)
 
     //--------------------------------------------------
     // update widget size and location
     //--------------------------------------------------
-    updateWidgetSize()
+    updateWidgetSize(inFullScreen)
 
 
     //--------------------------------------------------
@@ -632,7 +698,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mySurfaceView?.setTraffic(tx, pTx, rx, pRx)
   }
 
-  private fun updateWidgetSize() {
+  private fun updateWidgetSize(inFullScreen: Boolean) {
 
     val view = mView ?: return
     val mySurfaceView = view.findViewById<View>(R.id.mySurfaceView) ?: return
@@ -642,21 +708,17 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     val textSizeSp = Config.textSizeSp
     val screenWidth = view.width
     val xPos = Config.xPos
-    val hideInFullscreen = Config.hideWhenInFullscreen
-    // WindowInsets ベースの判定(MyRelativeLayout)とダミー窓ベースの判定(detector)を
-    // どちらか true なら全画面とみなす。Android 14 では前者が更新されないことがあるため二重化。
-    val inFullScreen = view.isFullScreen || isFullScreenViaDetector()
 
     // 依存する値がすべて前回と同じなら再計算・レイアウト適用をスキップする
     // (毎秒 showTraffic() から呼ばれるため、getIdentifier / setLayoutParams / setPadding の
     //  再実行を避けるためのキャッシュ)
+    // ※visibility は showTraffic() 側の applyOverlayVisibility() で毎回反映する
     if (
       mLayoutCached &&
       textSizeSp == mCachedTextSizeSp &&
       scaledDensity == mCachedScaledDensity &&
       screenWidth == mCachedScreenWidth &&
       xPos == mCachedXPos &&
-      hideInFullscreen == mCachedHideInFullscreen &&
       inFullScreen == mCachedInFullScreen
     ) {
       return
@@ -665,14 +727,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mCachedScaledDensity = scaledDensity
     mCachedScreenWidth = screenWidth
     mCachedXPos = xPos
-    mCachedHideInFullscreen = hideInFullscreen
     mCachedInFullScreen = inFullScreen
     mLayoutCached = true
-
-    //--------------------------------------------------
-    // hide when in fullscreen 等の visibility は showTraffic() 側で毎回反映するため
-    // ここでの適用は不要
-    //--------------------------------------------------
 
     //--------------------------------------------------
     // set widget width
@@ -741,13 +797,13 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     val detector = View(this)
     // サイズが変化したら(≒ system bars 状態が変わったら)即描画を反映する
+    // (showTraffic 冒頭の applyOverlayVisibility が可視性も更新する)
     detector.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
       val h = bottom - top
       val oldH = oldBottom - oldTop
       if (h != oldH) {
         MyLog.d { "FullScreenDetector: layout height=$h (old=$oldH), full=${isFullScreenViaDetector()}" }
         mLayoutCached = false
-        applyOverlayVisibility()
         showTraffic()
       }
     }
@@ -787,14 +843,18 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
   @Suppress("DEPRECATION")
   private fun getDisplayRealHeight(): Int {
+    // 毎秒の判定で WindowMetrics/Point を生成しないようキャッシュする(回転時に無効化)
+    if (mCachedDisplayRealHeight > 0) return mCachedDisplayRealHeight
     val wm = mWindowManager ?: return 0
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+    val height = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       wm.maximumWindowMetrics.bounds.height()
     } else {
       val point = android.graphics.Point()
       wm.defaultDisplay.getRealSize(point)
       point.y
     }
+    mCachedDisplayRealHeight = height
+    return height
   }
 
   private fun convertBytesToPerThousand(bytes: Long): Int {
@@ -823,10 +883,22 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
     // モバイル通信量のみを計測するモード。TrafficStats.getMobileXxxBytes() は
     // モバイル回線分の送受信バイト数を返す(Wi-Fi 分は含まない)
+    val mobileOnly = Config.mobileOnlyMeter
+
+    // 計測ソース(total/mobile)が切り替わった直後は、前回値が別ソースの累積値のため
+    // diff が数十 GB 規模の異常値になる。リセットして今回のサンプルは diff 0 で読み飛ばす。
+    if (mobileOnly != mLastCounterSourceMobile) {
+      mLastCounterSourceMobile = mobileOnly
+      mLastRxBytes = 0
+      mLastTxBytes = 0
+      mDiffRxBytes = 0
+      mDiffTxBytes = 0
+    }
+
     val totalRxBytes =
-      if (Config.mobileOnlyMeter) TrafficStats.getMobileRxBytes() else TrafficStats.getTotalRxBytes()
+      if (mobileOnly) TrafficStats.getMobileRxBytes() else TrafficStats.getTotalRxBytes()
     val totalTxBytes =
-      if (Config.mobileOnlyMeter) TrafficStats.getMobileTxBytes() else TrafficStats.getTotalTxBytes()
+      if (mobileOnly) TrafficStats.getMobileTxBytes() else TrafficStats.getTotalTxBytes()
 
     // TrafficStats.UNSUPPORTED (-1) が返る端末では diff 計算ができないので 0 として扱う
     if (totalRxBytes == TrafficStats.UNSUPPORTED.toLong() ||
@@ -855,7 +927,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     // Android4.3未満はTrafficStats.getTotalRx/TxBytes()に
     // loopback通信量を含んでいないのでこの処理はしない
     // ※Android 8.0以降は denied となるので除外する
-    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1) {
+    // ※モバイル計測(getMobileXxxBytes)には loopback 分が含まれないため減算しない
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1 && !mobileOnly) {
       val loopbackRxBytes = MyTrafficUtil.loopbackRxBytes
       val loopbackTxBytes = MyTrafficUtil.loopbackTxBytes
       val diffLoopbackRxBytes = loopbackRxBytes - mLastLoopbackRxBytes
@@ -930,6 +1003,11 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     MyLog.d("LayerService.onDestroy")
 
     mServiceAlive = false
+
+    // hide_and_resume の復帰処理等、保留中の遅延タスクを掃除する
+    // (破棄後に発火すると破棄済みインスタンス上で通知再表示などが走ってしまう)
+    mHandler.removeCallbacksAndMessages(null)
+    mResumeRunnable = null
 
     stopAlarm()
 
@@ -1052,5 +1130,10 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
 
       MyLog.d("LayerService\$GatherThread: done")
     }
+  }
+
+  companion object {
+    // hide_and_resume で再表示するまでの時間[ms]
+    private const val HIDE_AND_RESUME_DELAY_MSEC = 10_000L
   }
 }

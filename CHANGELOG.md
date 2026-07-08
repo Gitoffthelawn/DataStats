@@ -5,6 +5,9 @@ v4.0.0 (2026.07.xx)
 -------------------
 
 - Fix: hide-when-fullscreen now works reliably on Android 11+ (especially Android 14)
+- Fix: the notification's "hide temporarily" (10 sec) timer is now cancelled by a Show/Hide tap within the window (previously the overlay could pop back up against an explicit hide) and no longer fires after the service is stopped
+- Fix: changing the text size no longer flashes a bogus preview value for a moment
+- Fix: toggling "Hide when in fullscreen" now takes effect immediately while the settings screen is open
 - Feature: add 5 sec / 10 sec update interval options for battery-conscious users; the interval description now clarifies that the service auto-pauses while the screen is off
 - UI: preview area now defaults to a live traffic display showing the current upload/download speed; the classic slider/sample-button injection UI is still available via a toggle
 - Feature: Quick Settings tile to toggle the overlay on/off from the notification shade

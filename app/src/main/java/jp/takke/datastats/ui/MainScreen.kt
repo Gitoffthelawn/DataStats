@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import jp.takke.datastats.MyTrafficUtil
 import jp.takke.datastats.R
 
 /**
@@ -188,7 +189,7 @@ private fun OverflowMenu(
 @Composable
 private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks) {
   SectionCard(title = stringResource(R.string.section_display)) {
-    // Text size (stepper)
+    // 文字サイズ(ステッパー)
     SettingRow(
       title = stringResource(R.string.config_text_size),
       description = stringResource(R.string.desc_text_size),
@@ -206,7 +207,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
     }
     RowDivider()
 
-    // X position (slider)
+    // X 位置(スライダー)
     SettingRow(
       title = stringResource(R.string.config_pos),
       description = stringResource(R.string.desc_pos),
@@ -227,7 +228,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
     }
     RowDivider()
 
-    // Unit type (dropdown)
+    // 通信速度の単位(ドロップダウン)
     SettingRow(
       title = stringResource(R.string.config_unit_type),
       description = stringResource(R.string.desc_unit_type),
@@ -240,7 +241,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
     }
     RowDivider()
 
-    // Auto unit scale (switch): scale to MB/GB above 1 MB
+    // 単位の自動スケーリング(1MB/s 以上で MB/GB に切替)
     SwitchRow(
       title = stringResource(R.string.config_auto_unit_scale),
       description = stringResource(R.string.desc_auto_unit_scale),
@@ -249,7 +250,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
     )
     RowDivider()
 
-    // Bar max (dropdown)
+    // バーの最大速度(ドロップダウン)
     SettingRow(
       title = stringResource(R.string.config_bar_max_kb),
       description = stringResource(R.string.desc_bar_max_kb),
@@ -262,7 +263,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
     }
     RowDivider()
 
-    // Logarithm bar (switch)
+    // バーの対数表示
     SwitchRow(
       title = stringResource(R.string.config_logarithm_bar),
       description = stringResource(R.string.desc_logarithm_bar),
@@ -271,7 +272,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
     )
     RowDivider()
 
-    // Sparkline (switch)
+    // 速度履歴のミニグラフ
     SwitchRow(
       title = stringResource(R.string.config_sparkline),
       description = stringResource(R.string.desc_sparkline),
@@ -280,7 +281,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
     )
     RowDivider()
 
-    // Hide when fullscreen (switch)
+    // フルスクリーン時に非表示
     SwitchRow(
       title = stringResource(R.string.config_hide_when_in_fullscreen),
       description = stringResource(R.string.desc_hide_when_in_fullscreen),
@@ -289,7 +290,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
     )
     RowDivider()
 
-    // Network type badge (W/M/E/V)
+    // ネットワーク種別バッジ(W/M/E/V)
     SwitchRow(
       title = stringResource(R.string.config_show_network_type_icon),
       description = stringResource(R.string.desc_show_network_type_icon),
@@ -302,7 +303,7 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
 @Composable
 private fun BehaviorSection(state: ConfigUiState, callbacks: MainScreenCallbacks) {
   SectionCard(title = stringResource(R.string.section_behavior)) {
-    // Interval
+    // 更新間隔
     SettingRow(
       title = stringResource(R.string.config_interval),
       description = stringResource(R.string.desc_interval),
@@ -315,7 +316,7 @@ private fun BehaviorSection(state: ConfigUiState, callbacks: MainScreenCallbacks
     }
     RowDivider()
 
-    // Interpolate (enabled only when logBar)
+    // 補間モード(logBar が ON の場合のみ有効)
     SwitchRow(
       title = stringResource(R.string.config_interpolate),
       description = stringResource(R.string.desc_interpolate),
@@ -325,7 +326,7 @@ private fun BehaviorSection(state: ConfigUiState, callbacks: MainScreenCallbacks
     )
     RowDivider()
 
-    // Show only when on mobile network
+    // モバイル通信時のみ表示
     SwitchRow(
       title = stringResource(R.string.config_show_only_on_mobile),
       description = stringResource(R.string.desc_show_only_on_mobile),
@@ -334,7 +335,7 @@ private fun BehaviorSection(state: ConfigUiState, callbacks: MainScreenCallbacks
     )
     RowDivider()
 
-    // Measure mobile traffic only
+    // モバイル通信量のみ計測
     SwitchRow(
       title = stringResource(R.string.config_mobile_only_meter),
       description = stringResource(R.string.desc_mobile_only_meter),
@@ -417,7 +418,7 @@ private fun InjectPreviewContent(state: ConfigUiState, callbacks: MainScreenCall
   )
   Spacer(Modifier.height(12.dp))
 
-  // Sample buttons
+  // サンプルボタン
   Row(
     modifier = Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -433,7 +434,7 @@ private fun InjectPreviewContent(state: ConfigUiState, callbacks: MainScreenCall
   }
   Spacer(Modifier.height(8.dp))
 
-  // Slider + preview label
+  // スライダー + プレビューラベル
   Row(
     modifier = Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
@@ -455,9 +456,8 @@ private fun InjectPreviewContent(state: ConfigUiState, callbacks: MainScreenCall
 
 private fun formatBytesPerSec(bps: Long): String {
   if (bps < 0) return "-"
-  val kb = bps / 1024
-  val d1 = bps * 10 / 1024 % 10
-  return "%d.%d KB/s".format(kb, d1)
+  // オーバーレイと同じフォーマッタを使い、単位設定(Kbps / 自動スケーリング)を反映する
+  return MyTrafficUtil.formatSpeedText(bps)
 }
 
 //-----------------------------------------------------------
@@ -556,7 +556,8 @@ private fun RowDivider() {
   Spacer(Modifier.height(8.dp))
 }
 
-private fun formatInterval(ms: Int): String = "%d.%dsec".format(ms / 1000, (ms % 1000) / 100)
+// String.format はロケールによって非 ASCII 数字になるため文字列テンプレートで組み立てる
+private fun formatInterval(ms: Int): String = "${ms / 1000}.${ms % 1000 / 100}sec"
 
 private fun formatBarMax(kb: Int): String =
   if (kb >= 1024) "${kb / 1024}MB/s" else "${kb}KB/s"

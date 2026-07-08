@@ -143,14 +143,14 @@ dependencies {
 }
 
 // AGP 9 は release ビルド時に compose-group-mapping:2.2.10 を要求するが
-// このバージョンは Maven Central / Google Maven に公開されていない(2.4.0 は存在する)。
+// このバージョンは Maven Central / Google Maven に公開されていない(Kotlin 本体と同じ版は存在する)。
 // 該当の produceReleaseComposeMapping タスクは Compose 用のベースラインプロファイル最適化に使われるが
-// 必須ではないため、依存解決を 2.4.0 に差し替えて解消する。
+// 必須ではないため、依存解決を libs.versions.toml の kotlinVersion に差し替えて解消する。
 configurations.matching { it.name == "composeMappingProducerClasspath" }.configureEach {
     resolutionStrategy.eachDependency { details ->
         if (details.requested.group == "org.jetbrains.kotlin"
             && details.requested.name == "compose-group-mapping") {
-            details.useVersion("2.4.0")
+            details.useVersion(libs.versions.kotlinVersion.get())
         }
     }
 }

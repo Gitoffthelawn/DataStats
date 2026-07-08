@@ -22,6 +22,11 @@ object C {
   // QS タイル側から現在状態を参照するため prefs に永続化する。
   const val PREF_KEY_USER_WANTS_VISIBLE = "userWantsVisible"
 
+  // LayerService の表示切替 action(通知ボタン / QS タイルから送られる)
+  const val ACTION_SHOW = "show"
+  const val ACTION_HIDE = "hide"
+  const val ACTION_HIDE_AND_RESUME = "hide_and_resume"
+
   const val DEFAULT_TEXT_SIZE_SP = 8
 
   // 初期Alarmの遅延時間[ms]

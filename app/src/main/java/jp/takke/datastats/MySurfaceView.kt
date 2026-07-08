@@ -54,6 +54,10 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
   private val mDownloadMatrix = Matrix()
   private val mSparklinePath = Path()
 
+  // スパークライン描画用の再利用バッファ(毎フレームのリスト生成を避ける)
+  private val mSparkPTx = IntArray(TRAFFIC_LIST_COUNT_MAX)
+  private val mSparkPRx = IntArray(TRAFFIC_LIST_COUNT_MAX)
+
   // 現在のネットワーク種別(showNetworkTypeIcon が ON のとき描画する)
   @Volatile
   private var mNetworkType: NetworkTypeMonitor.NetworkType = NetworkTypeMonitor.NetworkType.NONE
@@ -328,6 +332,9 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     )
 
     paint.shader = null
+    // 影の設定を解除する
+    // (mPaint はフィールドで再利用するため、解除しないと次フレームのバー境界線に影が乗る)
+    paint.clearShadowLayer()
 
     // upload/download mark
     val paintUd = mPaintUd
@@ -367,14 +374,14 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 //        }
 
     //--------------------------------------------------
-    // sparkline (direct 60s trend overlay)
+    // スパークライン(直近 60 秒の速度履歴ミニグラフ)
     //--------------------------------------------------
     if (Config.sparklineMode) {
       drawSparklines(canvas, xDownloadStart)
     }
 
     //--------------------------------------------------
-    // network type badge (W / M / E / V)
+    // ネットワーク種別バッジ(W / M / E / V)
     //--------------------------------------------------
     if (Config.showNetworkTypeIcon) {
       drawNetworkTypeBadge(canvas, xDownloadStart, textSizePx)
@@ -413,24 +420,31 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
    */
   private fun drawSparklines(canvas: Canvas, xDownloadStart: Int) {
     // 履歴をスレッド安全にスナップショット
-    val snapshot: List<Traffic>
+    // (20fps の描画ループから呼ばれるため、毎フレームのリスト生成を避けて
+    //  再利用フィールドの IntArray にコピーする)
+    val n: Int
     synchronized(mTrafficList) {
-      if (mTrafficList.size < 2) return
-      snapshot = ArrayList(mTrafficList)
+      n = mTrafficList.size
+      if (n < 2) return
+      var i = 0
+      for (t in mTrafficList) {
+        mSparkPTx[i] = t.pTx
+        mSparkPRx[i] = t.pRx
+        i++
+      }
     }
 
-    drawOneSparkline(canvas, snapshot, xStart = 0, xEnd = xDownloadStart, isTx = true)
-    drawOneSparkline(canvas, snapshot, xStart = xDownloadStart, xEnd = mScreenWidth, isTx = false)
+    drawOneSparkline(canvas, mSparkPTx, n, xStart = 0, xEnd = xDownloadStart)
+    drawOneSparkline(canvas, mSparkPRx, n, xStart = xDownloadStart, xEnd = mScreenWidth)
   }
 
   private fun drawOneSparkline(
     canvas: Canvas,
-    snapshot: List<Traffic>,
+    values: IntArray,
+    n: Int,
     xStart: Int,
     xEnd: Int,
-    isTx: Boolean,
   ) {
-    val n = snapshot.size
     if (n < 2) return
 
     val width = (xEnd - xStart).toFloat()
@@ -450,8 +464,7 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     // 実測ミリ秒差でスケーリングすると Config.intervalMs 変更時に見た目が跳ねやすいため
     val step = width / (n - 1).toFloat()
     for (i in 0 until n) {
-      val t = snapshot[i]
-      val p = if (isTx) t.pTx else t.pRx  // [0, 1000]
+      val p = values[i]  // [0, 1000]
       val x = xStart + step * i
       // 上方向が大きい値になるよう Y を反転
       val y = height - (p / 1000f * height)
@@ -475,38 +488,8 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
   }
 
   private fun getReadableUDText(bytes: Long): String {
-
-    if (bytes < 0) {
-      return ""
-    }
-
-    val bps = Config.unitTypeBps
-    // bps モードでは bits に変換して桁判定する
-    val value = if (bps) bytes * 8 else bytes
-
-    // 単位接頭辞と除数を決定
-    // autoUnitScale = false の場合、既存互換のため常に K(KB/s or Kbps)を使う
-    val kb = 1024L
-    val mb = kb * 1024L
-    val gb = mb * 1024L
-    val divisor: Long
-    val prefix: String
-    when {
-      Config.autoUnitScale && value >= gb -> {
-        divisor = gb; prefix = "G"
-      }
-      Config.autoUnitScale && value >= mb -> {
-        divisor = mb; prefix = "M"
-      }
-      else -> {
-        divisor = kb; prefix = "K"
-      }
-    }
-
-    val whole = value / divisor
-    val dec = value * 10 / divisor % 10   // 小数第 1 位
-    val suffix = if (bps) "bps" else "B/s"
-    return "$whole.$dec$prefix$suffix"
+    // 単位変換ロジックは設定画面のライブプレビューと共通化している
+    return MyTrafficUtil.formatSpeedText(bytes)
   }
 
   private fun interpolate(t: Traffic, now: Long, getTx: Boolean): Int {

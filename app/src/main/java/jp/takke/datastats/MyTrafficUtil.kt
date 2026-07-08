@@ -5,22 +5,51 @@ import java.io.BufferedReader
 import java.io.FileReader
 
 object MyTrafficUtil {
-  fun convertByteToKb(bytes: Long): Long {
-    return bytes / 1024
-  }
 
+  /**
+   * 速度[バイト/秒]を表示用文字列に変換する。
+   * `Config.unitTypeBps` / `Config.autoUnitScale` を反映し、
+   * オーバーレイ(MySurfaceView)と設定画面のライブプレビューで共通に使う。
+   *
+   * 例: "12.3KB/s" / "1.5MB/s" / "8.0Kbps"
+   */
+  fun formatSpeedText(bytesPerSec: Long): String {
+    if (bytesPerSec < 0) {
+      return ""
+    }
 
-  fun convertByteToD1Kb(bytes: Long): Long {
-    val b1023 = bytes % 1024 // [0, 1023]
+    val bps = Config.unitTypeBps
+    // bps モードでは bits に変換して桁判定する
+    val value = if (bps) bytesPerSec * 8 else bytesPerSec
 
-    // to [0, 9]
-    if (b1023 >= 900) return 9
+    // 単位接頭辞と除数を決定
+    // autoUnitScale = false の場合、既存互換のため常に K(KB/s or Kbps)を使う
+    val kb = 1024L
+    val mb = kb * 1024L
+    val gb = mb * 1024L
+    val divisor: Long
+    val prefix: String
+    when {
+      Config.autoUnitScale && value >= gb -> {
+        divisor = gb; prefix = "G"
+      }
+      Config.autoUnitScale && value >= mb -> {
+        divisor = mb; prefix = "M"
+      }
+      else -> {
+        divisor = kb; prefix = "K"
+      }
+    }
 
-    if (b1023 == 0L) return 0
-
-    if (b1023 <= 100) return 1
-
-    return b1023 / 100
+    val whole = value / divisor
+    var dec = value * 10 / divisor % 10   // 小数第 1 位
+    // 微小トラフィックが「0.0」表示にならないよう最低 0.1 を保証する
+    // (通信が発生していることを視認できるようにする旧実装からの互換挙動)
+    if (value > 0 && whole == 0L && dec == 0L) {
+      dec = 1
+    }
+    val suffix = if (bps) "bps" else "B/s"
+    return "$whole.$dec$prefix$suffix"
   }
 
 

@@ -39,9 +39,13 @@ data class OnboardingUiState(
   val notificationRequired: Boolean = false,
   val batteryOptimizationIgnored: Boolean = false,
 ) {
-  /** 必須権限がすべて許可済みかどうか */
+  /**
+   * 開始できるかどうか。必須はオーバーレイ権限のみ。
+   * 通知権限は常駐通知のボタン操作に使うだけでサービス動作には必須でないため、
+   * 拒否(特に「今後表示しない」の恒久拒否)されていてもブロックしない。
+   */
   val canProceed: Boolean
-    get() = overlayGranted && (!notificationRequired || notificationGranted)
+    get() = overlayGranted
 }
 
 /**
