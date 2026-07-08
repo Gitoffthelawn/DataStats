@@ -34,6 +34,9 @@ object Config {
   /** オーバーレイに現在のネットワーク種別(W/M/E/V)を小さく描画する */
   var showNetworkTypeIcon: Boolean = false
 
+  /** 高速回線での可読性向上のため、1MB/s 以上を MB/s(または Mbps)へ自動スケーリングする */
+  var autoUnitScale: Boolean = false
+
   var textSizeSp: Int = C.DEFAULT_TEXT_SIZE_SP
 
 
@@ -54,6 +57,7 @@ object Config {
     showOnlyOnMobile = pref.getBoolean(C.PREF_KEY_SHOW_ONLY_ON_MOBILE, false)
     mobileOnlyMeter = pref.getBoolean(C.PREF_KEY_MOBILE_ONLY_METER, false)
     showNetworkTypeIcon = pref.getBoolean(C.PREF_KEY_SHOW_NETWORK_TYPE_ICON, false)
+    autoUnitScale = pref.getBoolean(C.PREF_KEY_AUTO_UNIT_SCALE, false)
     textSizeSp = pref.getInt(C.PREF_KEY_TEXT_SIZE_SP, C.DEFAULT_TEXT_SIZE_SP)
 
     // 文字色変更基準の再計算

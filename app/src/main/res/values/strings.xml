@@ -21,6 +21,7 @@
     <string name="config_show_only_on_mobile">Show only on mobile network</string>
     <string name="config_mobile_only_meter">Mobile-only measurement</string>
     <string name="config_show_network_type_icon">Show network type badge</string>
+    <string name="config_auto_unit_scale">Auto scale unit</string>
 
     <string name="preview">Preview</string>
     <string name="resident_service_running">DataStats service running</string>
@@ -49,6 +50,7 @@
     <string name="desc_show_only_on_mobile">Hide the meter unless the device is on a mobile data connection (Wi-Fi, Ethernet and VPN are treated as non-mobile).</string>
     <string name="desc_mobile_only_meter">Measure only mobile data traffic (Wi-Fi is excluded). Useful for tracking metered connection usage.</string>
     <string name="desc_show_network_type_icon">Draw a small letter on the meter indicating the current network: W (Wi-Fi) / M (Mobile) / E (Ethernet) / V (VPN).</string>
+    <string name="desc_auto_unit_scale">Automatically switch to MB/GB (or Mbps/Gbps) when the speed exceeds 1 MB/s. Keeps the display compact on fast connections.</string>
     <string name="desc_auto_start_on_boot">Start the service automatically when the device boots. When the screen turns off the service automatically pauses to save battery.</string>
 
     <string name="preview_hint">Drag the slider or tap a sample to inject a preview value into the overlay</string>

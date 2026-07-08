@@ -287,6 +287,7 @@ class MainActivity : ComponentActivity() {
       intervalMs = Config.intervalMs,
       barMaxKB = Config.barMaxKB,
       unitTypeBps = Config.unitTypeBps,
+      autoUnitScale = Config.autoUnitScale,
       debugMode = TkConfig.debugMode,
       previewLabel = "-",
       previewSlider = 0,
@@ -361,6 +362,12 @@ class MainActivity : ComponentActivity() {
       if (bps == mUiState.unitTypeBps) return@MainScreenCallbacks
       savePref { putBoolean(C.PREF_KEY_UNIT_TYPE_BPS, bps) }
       mUiState = mUiState.copy(unitTypeBps = bps)
+      doRestartService()
+    },
+    onAutoUnitScaleChange = { checked ->
+      savePref { putBoolean(C.PREF_KEY_AUTO_UNIT_SCALE, checked) }
+      mUiState = mUiState.copy(autoUnitScale = checked)
+      // 次フレームから表示単位が切替
       doRestartService()
     },
     onPreviewSliderChange = { progress ->

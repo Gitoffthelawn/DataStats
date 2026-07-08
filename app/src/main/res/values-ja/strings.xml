@@ -21,6 +21,7 @@
     <string name="config_show_only_on_mobile">モバイル通信時のみ表示</string>
     <string name="config_mobile_only_meter">モバイル通信量のみ計測</string>
     <string name="config_show_network_type_icon">ネットワーク種別バッジを表示</string>
+    <string name="config_auto_unit_scale">単位の自動スケーリング</string>
 
     <string name="preview">プレビュー</string>
     <string name="resident_service_running">DataStatsサービスを実行中</string>
@@ -49,6 +50,7 @@
     <string name="desc_show_only_on_mobile">モバイルデータ接続時のみメーターを表示します(Wi-Fi / イーサネット / VPN は非モバイル扱い)。</string>
     <string name="desc_mobile_only_meter">Wi-Fi を除外し、モバイル通信量のみを計測します。従量制回線の使用量を把握したい場合に有用です。</string>
     <string name="desc_show_network_type_icon">現在のネットワーク種別を示す小さな文字をメーターに描画します: W (Wi-Fi) / M (モバイル) / E (イーサネット) / V (VPN)。</string>
+    <string name="desc_auto_unit_scale">1 MB/s を超えると自動で MB/s・GB/s(または Mbps/Gbps)に切り替えます。高速回線でも表示が長くなりません。</string>
     <string name="desc_auto_start_on_boot">端末起動時にサービスを自動起動します。画面 OFF 中は自動停止しバッテリを節約します。</string>
 
     <string name="preview_hint">スライダーやサンプルボタンでオーバーレイにプレビュー値を注入します</string>

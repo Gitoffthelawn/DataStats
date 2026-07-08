@@ -21,6 +21,7 @@
     <string name="config_show_only_on_mobile">Mostrar solo en red móvil</string>
     <string name="config_mobile_only_meter">Medir solo el tráfico móvil</string>
     <string name="config_show_network_type_icon">Mostrar indicador de red</string>
+    <string name="config_auto_unit_scale">Escala de unidad automática</string>
 
     <string name="preview">Vista previa</string>
     <string name="resident_service_running">Servicio de DataStats en ejecución</string>
@@ -49,6 +50,7 @@
     <string name="desc_show_only_on_mobile">Oculta el medidor a menos que el dispositivo esté usando datos móviles (Wi-Fi, Ethernet y VPN se tratan como no móvil).</string>
     <string name="desc_mobile_only_meter">Mide solo el tráfico de datos móviles (excluye Wi-Fi). Útil para controlar el consumo de conexiones con tarifa por uso.</string>
     <string name="desc_show_network_type_icon">Dibuja una letra pequeña en el medidor que indica la red actual: W (Wi-Fi) / M (móvil) / E (Ethernet) / V (VPN).</string>
+    <string name="desc_auto_unit_scale">Cambia automáticamente a MB/GB (o Mbps/Gbps) cuando la velocidad supera 1 MB/s. Mantiene compacta la visualización en conexiones rápidas.</string>
     <string name="desc_auto_start_on_boot">Inicia el servicio automáticamente al encender el dispositivo. Cuando la pantalla se apaga, el servicio se pausa automáticamente para ahorrar batería.</string>
 
     <string name="preview_hint">Arrastra el deslizador o toca una muestra para inyectar un valor de previsualización en la superposición</string>

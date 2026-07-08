@@ -63,6 +63,7 @@ data class ConfigUiState(
   val intervalMs: Int = 1000,
   val barMaxKB: Int = 10240,
   val unitTypeBps: Boolean = false,
+  val autoUnitScale: Boolean = false,
   val debugMode: Boolean = false,
   val previewLabel: String = "-",
   val previewSlider: Int = 0,
@@ -91,6 +92,7 @@ data class MainScreenCallbacks(
   val onIntervalChange: (Int) -> Unit = {},
   val onBarMaxChange: (Int) -> Unit = {},
   val onUnitTypeChange: (Boolean) -> Unit = {},
+  val onAutoUnitScaleChange: (Boolean) -> Unit = {},
   val onPreviewSliderChange: (Int) -> Unit = {},
   val onSampleClick: (Int) -> Unit = {},
   val onPreviewLiveModeChange: (Boolean) -> Unit = {},
@@ -236,6 +238,15 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
         onSelected = { callbacks.onUnitTypeChange(it) },
       )
     }
+    RowDivider()
+
+    // Auto unit scale (switch): scale to MB/GB above 1 MB
+    SwitchRow(
+      title = stringResource(R.string.config_auto_unit_scale),
+      description = stringResource(R.string.desc_auto_unit_scale),
+      checked = state.autoUnitScale,
+      onCheckedChange = callbacks.onAutoUnitScaleChange,
+    )
     RowDivider()
 
     // Bar max (dropdown)

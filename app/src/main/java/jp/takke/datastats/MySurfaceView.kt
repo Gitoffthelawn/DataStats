@@ -476,20 +476,37 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
   private fun getReadableUDText(bytes: Long): String {
 
-    //        MyLog.d(" getReadableUDText: " + bytes + "B");
-
     if (bytes < 0) {
       return ""
     }
 
-    return if (Config.unitTypeBps) {
-      val bits = bytes * 8
-      MyTrafficUtil.convertByteToKb(bits)
-        .toString() + "." + MyTrafficUtil.convertByteToD1Kb(bits) + "Kbps"
-    } else {
-      MyTrafficUtil.convertByteToKb(bytes)
-        .toString() + "." + MyTrafficUtil.convertByteToD1Kb(bytes) + "KB/s"
+    val bps = Config.unitTypeBps
+    // bps モードでは bits に変換して桁判定する
+    val value = if (bps) bytes * 8 else bytes
+
+    // 単位接頭辞と除数を決定
+    // autoUnitScale = false の場合、既存互換のため常に K(KB/s or Kbps)を使う
+    val kb = 1024L
+    val mb = kb * 1024L
+    val gb = mb * 1024L
+    val divisor: Long
+    val prefix: String
+    when {
+      Config.autoUnitScale && value >= gb -> {
+        divisor = gb; prefix = "G"
+      }
+      Config.autoUnitScale && value >= mb -> {
+        divisor = mb; prefix = "M"
+      }
+      else -> {
+        divisor = kb; prefix = "K"
+      }
     }
+
+    val whole = value / divisor
+    val dec = value * 10 / divisor % 10   // 小数第 1 位
+    val suffix = if (bps) "bps" else "B/s"
+    return "$whole.$dec$prefix$suffix"
   }
 
   private fun interpolate(t: Traffic, now: Long, getTx: Boolean): Int {
