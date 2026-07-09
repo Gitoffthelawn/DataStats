@@ -1,43 +1,43 @@
 Change Log
 ==========
 
-v4.0.0 (2026.07.xx)
+v4.0.0 (2026.07.09)
 -------------------
 
-- Fix: hide-when-fullscreen now works reliably on Android 11+ (especially Android 14)
-- Fix: the notification's "hide temporarily" (10 sec) timer is now cancelled by a Show/Hide tap within the window (previously the overlay could pop back up against an explicit hide) and no longer fires after the service is stopped
-- Fix: changing the text size no longer flashes a bogus preview value for a moment
-- Fix: toggling "Hide when in fullscreen" now takes effect immediately while the settings screen is open
-- Feature: add 5 sec / 10 sec update interval options for battery-conscious users; the interval description now clarifies that the service auto-pauses while the screen is off
-- UI: preview area now defaults to a live traffic display showing the current upload/download speed; the classic slider/sample-button injection UI is still available via a toggle
+- UI: revamp the settings screen with Jetpack Compose + Material 3 (DayNight, Material You dynamic colors), grouped into Display / Behavior / Startup sections with per-setting descriptions
 - Feature: Quick Settings tile to toggle the overlay on/off from the notification shade
+- Feature: overlay customization — vertical position (top / bottom edge), opacity slider, background color presets, and display style (text + bar / text only / bar only)
 - Feature: "Show only on mobile network" and "Mobile-only measurement" options for users on metered data plans (Wi-Fi / Ethernet / VPN are treated as non-mobile)
+- Feature: optional sparkline overlay showing the last ~60 seconds of upload/download traffic on top of the meter (toggle in Display section)
 - Feature: optional small network-type badge on the overlay meter (W / M / E / V)
 - Feature: optional auto unit scaling — automatically switch to MB/s (Mbps) or GB/s (Gbps) on fast connections instead of showing e.g. "102400.0KB/s"
-- Feature: overlay customization — vertical position (top / bottom edge), opacity slider, background color presets, and display style (text + bar / text only / bar only)
+- Feature: add 5 sec / 10 sec update interval options for battery-conscious users; the interval description now clarifies that the service auto-pauses while the screen is off
+- UI: preview area now defaults to a live traffic display showing the current upload/download speed; the classic slider/sample-button injection UI is still available via a toggle
+- UI: first-launch onboarding screen explaining why the overlay / notification / battery-optimization settings are needed; the resident service is turned on by default when onboarding completes
 - i18n: add Simplified Chinese (zh-rCN), Korean (ko) and Spanish (es) translations
+- Fix: hide-when-fullscreen now works reliably on Android 11+ (especially Android 14)
 - Fix: overlay X position stayed anchored to the old screen width after rotation; the service now re-applies the WindowManager LayoutParams and invalidates its cached layout on configuration change / overlay resize
-- Feature: optional sparkline overlay showing the last ~60 seconds of upload/download traffic on top of the meter (toggle in Display section)
+- Fix: keep the notification during screen off (previously the foreground notification could not be dismissed by cancel())
+- Fix: the notification's "hide temporarily" (10 sec) timer is now cancelled by a Show/Hide tap within the window (previously the overlay could pop back up against an explicit hide) and no longer fires after the service is stopped
+- Fix: handle TrafficStats UNSUPPORTED (-1) devices and clamp negative diffs caused by counter reset
+- Fix: use SystemClock.elapsedRealtime() for interval measurement to avoid wall-clock changes affecting the speed calculation
+- Fix: stop the service immediately when started without overlay permission (previously it stayed resident invisibly when auto-started at boot)
+- Fix: use startForegroundService from the notification action receiver to avoid background start restriction exceptions
+- Fix: interrupt the gather thread on stop to avoid blocking the main thread up to the update interval (potential ANR)
+- Fix: dispatch onScreenOff to the main thread from the gather worker to avoid races on state flags and handler registration
+- Fix: prevent ServiceConnection leak when Activity is destroyed before onServiceConnected
+- Fix: toggling "Hide when in fullscreen" now takes effect immediately while the settings screen is open
+- Fix: changing the text size no longer flashes a bogus preview value for a moment
+- Fix: add @Volatile to shared thread flags to fix memory visibility issues
 - Perf: remove the legacy AlarmManager keep-alive that woke the service every 60 seconds; recovery after a process kill now relies on the foreground service + START_STICKY, saving battery
 - Perf: cache updateWidgetSize inputs to skip layout / getIdentifier calls when nothing changed each second
 - Perf: reuse Paint / Matrix / cached Resources values in MySurfaceView.myDrawFrame instead of per-frame allocation
-- Perf: MyLog.d { ... } inline lambda overload skips string concatenation when debug logging is disabled
 - Perf: replace 3-point Lagrange interpolation with 2-point linear interpolation (removes DoubleArray allocation and overshoot guards)
+- Perf: MyLog.d { ... } inline lambda overload skips string concatenation when debug logging is disabled
 - Cleanup: migrate the remaining Java sources (Config, C, MyLog, IOUtil, TkConfig, TkConsts) to Kotlin; the project is now 100% Kotlin
 - Cleanup: replace all remaining deprecated APIs (Resources.getColor, scaledDensity, status_bar_height lookup, PowerManager.isScreenOn, TYPE_TOAST dead code); text sizing now supports Android 14+ non-linear font scaling
-- Dev: add unit tests for the speed formatting / bar scaling logic and run them (with lint) on GitHub Actions CI
-- UI: first-launch onboarding screen explaining why the overlay / notification / battery-optimization settings are needed; the resident service is turned on by default when onboarding completes
-- UI: revamp the settings screen with Jetpack Compose + Material 3 (DayNight, Material You dynamic colors), grouped into Display / Behavior / Startup sections with per-setting descriptions
 - Refactor: route force-redraw requests through AIDL (ILayerService.forceRedraw) instead of Activity poking the SurfaceView static
-- Fix: dispatch onScreenOff to the main thread from the gather worker to avoid races on state flags and handler registration
-- Fix: interrupt the gather thread on stop to avoid blocking the main thread up to the update interval (potential ANR)
-- Fix: use startForegroundService from the notification action receiver to avoid background start restriction exceptions
-- Fix: stop the service immediately when started without overlay permission (previously it stayed resident invisibly when auto-started at boot)
-- Fix: prevent ServiceConnection leak when Activity is destroyed before onServiceConnected
-- Fix: use SystemClock.elapsedRealtime() for interval measurement to avoid wall-clock changes affecting the speed calculation
-- Fix: handle TrafficStats UNSUPPORTED (-1) devices and clamp negative diffs caused by counter reset
-- Fix: keep the notification during screen off (previously the foreground notification could not be dismissed by cancel())
-- Add @Volatile to shared thread flags to fix memory visibility issues
+- Dev: add unit tests for the speed formatting / bar scaling logic and run them (with lint) on GitHub Actions CI
 - compileSdkVersion 36 -> 37
 - Java 8 -> 11
 - Update library
