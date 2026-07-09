@@ -14,6 +14,7 @@ v4.0.0 (2026.07.xx)
 - Feature: "Show only on mobile network" and "Mobile-only measurement" options for users on metered data plans (Wi-Fi / Ethernet / VPN are treated as non-mobile)
 - Feature: optional small network-type badge on the overlay meter (W / M / E / V)
 - Feature: optional auto unit scaling — automatically switch to MB/s (Mbps) or GB/s (Gbps) on fast connections instead of showing e.g. "102400.0KB/s"
+- Feature: overlay customization — vertical position (top / bottom edge), opacity slider, background color presets, and display style (text + bar / text only / bar only)
 - i18n: add Simplified Chinese (zh-rCN), Korean (ko) and Spanish (es) translations
 - Fix: overlay X position stayed anchored to the old screen width after rotation; the service now re-applies the WindowManager LayoutParams and invalidates its cached layout on configuration change / overlay resize
 - Feature: optional sparkline overlay showing the last ~60 seconds of upload/download traffic on top of the meter (toggle in Display section)

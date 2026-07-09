@@ -65,7 +65,6 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
 
   // Resources から取得する値のキャッシュ(不変)
   private var mResCached = false
-  private var mBgColor = 0
   private var mUploadBorderColor = 0
   private var mDownloadBorderColor = 0
   private var mPaddingRight = 0
@@ -256,111 +255,117 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
     // clear
     canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
-    // Background
-    canvas.drawColor(mBgColor)
+    // Background(設定でカスタマイズ可能)
+    canvas.drawColor(Config.overlayBgColor)
 
-
-    //--------------------------------------------------
-    // upload, download
-    //--------------------------------------------------
+    val displayStyle = Config.displayStyle
     val xDownloadStart = mScreenWidth / 2
 
-    // upload gradient
-    if (uploadDrawable == null) {
-      uploadDrawable = ResourcesCompat.getDrawable(resources, R.drawable.upload_background, null)
-    }
-    val xUploadEnd = (pTx / 1000f * xDownloadStart).toInt()
-    uploadDrawable!!.setBounds(0, 0, xUploadEnd, mScreenHeight)
-    uploadDrawable!!.draw(canvas)
-    if (pTx > 0) {
-      paint.color = mUploadBorderColor
-      paint.strokeWidth = mBarStrokeWidth
-      canvas.drawLine(
-        xUploadEnd.toFloat(),
-        0f,
-        xUploadEnd.toFloat(),
-        mScreenHeight.toFloat(),
-        paint
-      )
-    }
+    //--------------------------------------------------
+    // upload, download バー(テキストのみスタイルでは描かない)
+    //--------------------------------------------------
+    if (displayStyle != C.DISPLAY_STYLE_TEXT_ONLY) {
+      // upload gradient
+      if (uploadDrawable == null) {
+        uploadDrawable = ResourcesCompat.getDrawable(resources, R.drawable.upload_background, null)
+      }
+      val xUploadEnd = (pTx / 1000f * xDownloadStart).toInt()
+      uploadDrawable!!.setBounds(0, 0, xUploadEnd, mScreenHeight)
+      uploadDrawable!!.draw(canvas)
+      if (pTx > 0) {
+        paint.color = mUploadBorderColor
+        paint.strokeWidth = mBarStrokeWidth
+        canvas.drawLine(
+          xUploadEnd.toFloat(),
+          0f,
+          xUploadEnd.toFloat(),
+          mScreenHeight.toFloat(),
+          paint
+        )
+      }
 
-    // download gradient
-    if (downloadDrawable == null) {
-      downloadDrawable =
-        ResourcesCompat.getDrawable(resources, R.drawable.download_background, null)
+      // download gradient
+      if (downloadDrawable == null) {
+        downloadDrawable =
+          ResourcesCompat.getDrawable(resources, R.drawable.download_background, null)
+      }
+      val xDownloadEnd = (xDownloadStart + pRx / 1000f * xDownloadStart).toInt()
+      downloadDrawable!!.setBounds(xDownloadStart, 0, xDownloadEnd, mScreenHeight)
+      downloadDrawable!!.draw(canvas)
+      if (pRx > 0) {
+        paint.color = mDownloadBorderColor
+        paint.strokeWidth = mBarStrokeWidth
+        canvas.drawLine(
+          xDownloadEnd.toFloat(),
+          0f,
+          xDownloadEnd.toFloat(),
+          mScreenHeight.toFloat(),
+          paint
+        )
+      }
     }
-    val xDownloadEnd = (xDownloadStart + pRx / 1000f * xDownloadStart).toInt()
-    downloadDrawable!!.setBounds(xDownloadStart, 0, xDownloadEnd, mScreenHeight)
-    downloadDrawable!!.draw(canvas)
-    if (pRx > 0) {
-      paint.color = mDownloadBorderColor
-      paint.strokeWidth = mBarStrokeWidth
-      canvas.drawLine(
-        xDownloadEnd.toFloat(),
-        0f,
-        xDownloadEnd.toFloat(),
-        mScreenHeight.toFloat(),
-        paint
-      )
-    }
-
 
     val displayMetrics = resources.displayMetrics
     val textSizeSp = Config.textSizeSp
     val textSizePx = TkUtil.spToPx(textSizeSp.toFloat(), displayMetrics)
 
-    // upload text
-    paint.typeface = Typeface.MONOSPACE
-    paint.color = MyTrafficUtil.getTextColorByBytes(resources, tx)
-    paint.setShadowLayer(1.5f, 1.5f, 1.5f, MyTrafficUtil.getTextShadowColorByBytes(resources, tx))
-    paint.textAlign = Paint.Align.RIGHT
-    paint.textSize = textSizePx
-    canvas.drawText(
-      getReadableUDText(tx),
-      (xDownloadStart - mPaddingRight).toFloat(),
-      paint.textSize,
-      paint
-    )
+    //--------------------------------------------------
+    // テキストと上下マーク(バーのみスタイルでは描かない)
+    //--------------------------------------------------
+    if (displayStyle != C.DISPLAY_STYLE_BAR_ONLY) {
+      // upload text
+      paint.typeface = Typeface.MONOSPACE
+      paint.color = MyTrafficUtil.getTextColorByBytes(resources, tx)
+      paint.setShadowLayer(1.5f, 1.5f, 1.5f, MyTrafficUtil.getTextShadowColorByBytes(resources, tx))
+      paint.textAlign = Paint.Align.RIGHT
+      paint.textSize = textSizePx
+      canvas.drawText(
+        getReadableUDText(tx),
+        (xDownloadStart - mPaddingRight).toFloat(),
+        paint.textSize,
+        paint
+      )
 
-    // download text
-    paint.color = MyTrafficUtil.getTextColorByBytes(resources, rx)
-    paint.setShadowLayer(1.5f, 1.5f, 1.5f, MyTrafficUtil.getTextShadowColorByBytes(resources, rx))
-    canvas.drawText(
-      getReadableUDText(rx),
-      (mScreenWidth - mPaddingRight).toFloat(),
-      paint.textSize,
-      paint
-    )
+      // download text
+      paint.color = MyTrafficUtil.getTextColorByBytes(resources, rx)
+      paint.setShadowLayer(1.5f, 1.5f, 1.5f, MyTrafficUtil.getTextShadowColorByBytes(resources, rx))
+      canvas.drawText(
+        getReadableUDText(rx),
+        (mScreenWidth - mPaddingRight).toFloat(),
+        paint.textSize,
+        paint
+      )
 
-    paint.shader = null
-    // 影の設定を解除する
-    // (mPaint はフィールドで再利用するため、解除しないと次フレームのバー境界線に影が乗る)
-    paint.clearShadowLayer()
+      paint.shader = null
+      // 影の設定を解除する
+      // (mPaint はフィールドで再利用するため、解除しないと次フレームのバー境界線に影が乗る)
+      paint.clearShadowLayer()
 
-    // upload/download mark
-    val paintUd = mPaintUd
-    val udMarkSize = TkUtil.spToPx((textSizeSp + 2).toFloat(), displayMetrics)
-    run {
-      if (mUploadMarkBitmap == null) {
-        mUploadMarkBitmap =
-          BitmapFactory.decodeResource(resources, R.drawable.ic_find_previous_holo_dark)
+      // upload/download mark
+      val paintUd = mPaintUd
+      val udMarkSize = TkUtil.spToPx((textSizeSp + 2).toFloat(), displayMetrics)
+      run {
+        if (mUploadMarkBitmap == null) {
+          mUploadMarkBitmap =
+            BitmapFactory.decodeResource(resources, R.drawable.ic_find_previous_holo_dark)
+        }
+        val bmp = mUploadMarkBitmap!!
+        val s = udMarkSize / bmp.width
+        mUploadMatrix.setScale(s, s)
+        mUploadMatrix.postTranslate(mPaddingLeft.toFloat(), 0f)
+        canvas.drawBitmap(bmp, mUploadMatrix, paintUd)
       }
-      val bmp = mUploadMarkBitmap!!
-      val s = udMarkSize / bmp.width
-      mUploadMatrix.setScale(s, s)
-      mUploadMatrix.postTranslate(mPaddingLeft.toFloat(), 0f)
-      canvas.drawBitmap(bmp, mUploadMatrix, paintUd)
-    }
-    run {
-      if (mDownloadMarkBitmap == null) {
-        mDownloadMarkBitmap =
-          BitmapFactory.decodeResource(resources, R.drawable.ic_find_next_holo_dark)
+      run {
+        if (mDownloadMarkBitmap == null) {
+          mDownloadMarkBitmap =
+            BitmapFactory.decodeResource(resources, R.drawable.ic_find_next_holo_dark)
+        }
+        val bmp = mDownloadMarkBitmap!!
+        val s = udMarkSize / bmp.width
+        mDownloadMatrix.setScale(s, s)
+        mDownloadMatrix.postTranslate((xDownloadStart + mPaddingLeft).toFloat(), 0f)
+        canvas.drawBitmap(bmp, mDownloadMatrix, paintUd)
       }
-      val bmp = mDownloadMarkBitmap!!
-      val s = udMarkSize / bmp.width
-      mDownloadMatrix.setScale(s, s)
-      mDownloadMatrix.postTranslate((xDownloadStart + mPaddingLeft).toFloat(), 0f)
-      canvas.drawBitmap(bmp, mDownloadMatrix, paintUd)
     }
 
     // FPS
@@ -479,7 +484,6 @@ class MySurfaceView : SurfaceView, SurfaceHolder.Callback, Runnable {
   private fun ensureResourcesCached() {
     if (mResCached) return
     val res = resources
-    mBgColor = ResourcesCompat.getColor(res, R.color.textBackgroundColor, null)
     mUploadBorderColor = ResourcesCompat.getColor(res, R.color.uploadBorder, null)
     mDownloadBorderColor = ResourcesCompat.getColor(res, R.color.downloadBorder, null)
     mPaddingRight = res.getDimensionPixelSize(R.dimen.overlay_padding_right)

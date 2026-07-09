@@ -77,4 +77,24 @@
     <string name="onboarding_start">開始</string>
     <string name="onboarding_required_missing">必須の権限を許可してください。</string>
 
+
+    <!-- オーバーレイ表示のカスタマイズ -->
+    <string name="config_v_pos">縦位置</string>
+    <string name="desc_v_pos">メーターを画面の上端・下端どちらに表示するか</string>
+    <string name="v_pos_top">上端</string>
+    <string name="v_pos_bottom">下端</string>
+    <string name="config_opacity">不透明度</string>
+    <string name="desc_opacity">オーバーレイ全体の不透明度。Android 12+ ではタッチ保護のため上限があります。</string>
+    <string name="config_bg_color">背景色</string>
+    <string name="desc_bg_color">メーター背後の背景色</string>
+    <string name="bg_color_default">標準</string>
+    <string name="bg_color_dark">濃いめ</string>
+    <string name="bg_color_transparent">なし</string>
+    <string name="bg_color_navy">ネイビー</string>
+    <string name="config_display_style">表示スタイル</string>
+    <string name="desc_display_style">メーターに描画する要素を選択します</string>
+    <string name="style_bar_and_text">テキスト+バー</string>
+    <string name="style_text_only">テキストのみ</string>
+    <string name="style_bar_only">バーのみ</string>
+
 </resources>

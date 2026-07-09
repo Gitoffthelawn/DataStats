@@ -77,4 +77,24 @@
     <string name="onboarding_start">开始</string>
     <string name="onboarding_required_missing">请授予以上必需权限。</string>
 
+
+    <!-- 悬浮窗显示自定义 -->
+    <string name="config_v_pos">垂直位置</string>
+    <string name="desc_v_pos">将速度表显示在屏幕顶部或底部</string>
+    <string name="v_pos_top">顶部</string>
+    <string name="v_pos_bottom">底部</string>
+    <string name="config_opacity">不透明度</string>
+    <string name="desc_opacity">悬浮窗整体的不透明度。Android 12+ 出于触摸安全会限制上限。</string>
+    <string name="config_bg_color">背景颜色</string>
+    <string name="desc_bg_color">速度表背后的背景颜色</string>
+    <string name="bg_color_default">默认</string>
+    <string name="bg_color_dark">深色</string>
+    <string name="bg_color_transparent">无</string>
+    <string name="bg_color_navy">藏青</string>
+    <string name="config_display_style">显示样式</string>
+    <string name="desc_display_style">选择在速度表上绘制的元素</string>
+    <string name="style_bar_and_text">文字+进度条</string>
+    <string name="style_text_only">仅文字</string>
+    <string name="style_bar_only">仅进度条</string>
+
 </resources>

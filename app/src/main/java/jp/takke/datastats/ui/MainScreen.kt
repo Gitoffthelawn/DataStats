@@ -61,6 +61,10 @@ data class ConfigUiState(
   val showNetworkTypeIcon: Boolean = false,
   val textSizeSp: Int = 10,
   val xPos: Int = 100,
+  val overlayAtBottom: Boolean = false,
+  val overlayOpacity: Int = 100,
+  val overlayBgColor: Int = 0x66000000,
+  val displayStyle: Int = 0,
   val intervalMs: Int = 1000,
   val barMaxKB: Int = 10240,
   val unitTypeBps: Boolean = false,
@@ -90,6 +94,10 @@ data class MainScreenCallbacks(
   val onShowNetworkTypeIconChange: (Boolean) -> Unit = {},
   val onTextSizeDelta: (Int) -> Unit = {},
   val onXPosChange: (Int) -> Unit = {},
+  val onOverlayAtBottomChange: (Boolean) -> Unit = {},
+  val onOverlayOpacityChange: (Int) -> Unit = {},
+  val onOverlayBgColorChange: (Int) -> Unit = {},
+  val onDisplayStyleChange: (Int) -> Unit = {},
   val onIntervalChange: (Int) -> Unit = {},
   val onBarMaxChange: (Int) -> Unit = {},
   val onUnitTypeChange: (Boolean) -> Unit = {},
@@ -106,6 +114,12 @@ data class MainScreenCallbacks(
 private val INTERVAL_OPTIONS = intArrayOf(500, 1000, 1500, 2000, 5000, 10000)
 private val BAR_MAX_OPTIONS = intArrayOf(10, 50, 100, 500, 1024, 2048, 5120, 10240)
 private val SAMPLE_KB = intArrayOf(1, 20, 50, 80, 100)
+
+// 背景色プリセット(ARGB)。BG_COLOR_DEFAULT は C.DEFAULT_OVERLAY_BG_COLOR と同値
+private const val BG_COLOR_DEFAULT = 0x66000000
+private const val BG_COLOR_DARK = 0xCC000000.toInt()
+private const val BG_COLOR_TRANSPARENT = 0x00000000
+private const val BG_COLOR_NAVY = 0x663F51B5
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -225,6 +239,83 @@ private fun DisplaySection(state: ConfigUiState, callbacks: MainScreenCallbacks)
       )
       Spacer(Modifier.width(8.dp))
       Text("${state.xPos}%", modifier = Modifier.width(48.dp), textAlign = TextAlign.End)
+    }
+    RowDivider()
+
+    // 縦位置(上端 / 下端)
+    SettingRow(
+      title = stringResource(R.string.config_v_pos),
+      description = stringResource(R.string.desc_v_pos),
+    ) {
+      DropdownSelector(
+        current = stringResource(
+          if (state.overlayAtBottom) R.string.v_pos_bottom else R.string.v_pos_top,
+        ),
+        options = listOf(
+          stringResource(R.string.v_pos_top) to false,
+          stringResource(R.string.v_pos_bottom) to true,
+        ),
+        onSelected = { callbacks.onOverlayAtBottomChange(it) },
+      )
+    }
+    RowDivider()
+
+    // 不透明度(スライダー)
+    SettingRow(
+      title = stringResource(R.string.config_opacity),
+      description = stringResource(R.string.desc_opacity),
+    )
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Slider(
+        value = state.overlayOpacity.toFloat(),
+        onValueChange = { callbacks.onOverlayOpacityChange(it.toInt()) },
+        valueRange = 20f..100f,
+        modifier = Modifier.weight(1f),
+      )
+      Spacer(Modifier.width(8.dp))
+      Text("${state.overlayOpacity}%", modifier = Modifier.width(48.dp), textAlign = TextAlign.End)
+    }
+    RowDivider()
+
+    // 背景色(プリセット)
+    SettingRow(
+      title = stringResource(R.string.config_bg_color),
+      description = stringResource(R.string.desc_bg_color),
+    ) {
+      val bgOptions = listOf(
+        stringResource(R.string.bg_color_default) to BG_COLOR_DEFAULT,
+        stringResource(R.string.bg_color_dark) to BG_COLOR_DARK,
+        stringResource(R.string.bg_color_transparent) to BG_COLOR_TRANSPARENT,
+        stringResource(R.string.bg_color_navy) to BG_COLOR_NAVY,
+      )
+      DropdownSelector(
+        current = bgOptions.firstOrNull { it.second == state.overlayBgColor }?.first
+          ?: bgOptions[0].first,
+        options = bgOptions,
+        onSelected = { callbacks.onOverlayBgColorChange(it) },
+      )
+    }
+    RowDivider()
+
+    // 表示スタイル(テキスト+バー / テキストのみ / バーのみ)
+    SettingRow(
+      title = stringResource(R.string.config_display_style),
+      description = stringResource(R.string.desc_display_style),
+    ) {
+      val styleOptions = listOf(
+        stringResource(R.string.style_bar_and_text) to 0,
+        stringResource(R.string.style_text_only) to 1,
+        stringResource(R.string.style_bar_only) to 2,
+      )
+      DropdownSelector(
+        current = styleOptions.firstOrNull { it.second == state.displayStyle }?.first
+          ?: styleOptions[0].first,
+        options = styleOptions,
+        onSelected = { callbacks.onDisplayStyleChange(it) },
+      )
     }
     RowDivider()
 

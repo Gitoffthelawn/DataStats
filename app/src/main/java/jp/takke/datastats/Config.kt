@@ -37,6 +37,18 @@ object Config {
   /** 高速回線での可読性向上のため、1MB/s 以上を MB/s(または Mbps)へ自動スケーリングする */
   var autoUnitScale: Boolean = false
 
+  /** オーバーレイを画面下端に表示する(false = 上端) */
+  var overlayAtBottom: Boolean = false
+
+  /** オーバーレイ全体の不透明度 [MIN_OVERLAY_OPACITY, 100]。Android 12+ ではタッチ保護の上限で頭打ちされる */
+  var overlayOpacity: Int = C.DEFAULT_OVERLAY_OPACITY
+
+  /** オーバーレイの背景色(ARGB) */
+  var overlayBgColor: Int = C.DEFAULT_OVERLAY_BG_COLOR
+
+  /** 表示スタイル(C.DISPLAY_STYLE_*) */
+  var displayStyle: Int = C.DISPLAY_STYLE_BAR_AND_TEXT
+
   var textSizeSp: Int = C.DEFAULT_TEXT_SIZE_SP
 
 
@@ -58,6 +70,11 @@ object Config {
     mobileOnlyMeter = pref.getBoolean(C.PREF_KEY_MOBILE_ONLY_METER, false)
     showNetworkTypeIcon = pref.getBoolean(C.PREF_KEY_SHOW_NETWORK_TYPE_ICON, false)
     autoUnitScale = pref.getBoolean(C.PREF_KEY_AUTO_UNIT_SCALE, false)
+    overlayAtBottom = pref.getBoolean(C.PREF_KEY_OVERLAY_AT_BOTTOM, false)
+    overlayOpacity = pref.getInt(C.PREF_KEY_OVERLAY_OPACITY, C.DEFAULT_OVERLAY_OPACITY)
+      .coerceIn(C.MIN_OVERLAY_OPACITY, 100)
+    overlayBgColor = pref.getInt(C.PREF_KEY_OVERLAY_BG_COLOR, C.DEFAULT_OVERLAY_BG_COLOR)
+    displayStyle = pref.getInt(C.PREF_KEY_DISPLAY_STYLE, C.DISPLAY_STYLE_BAR_AND_TEXT)
     textSizeSp = pref.getInt(C.PREF_KEY_TEXT_SIZE_SP, C.DEFAULT_TEXT_SIZE_SP)
 
     // 文字色変更基準の再計算

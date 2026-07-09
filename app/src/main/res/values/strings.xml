@@ -77,4 +77,24 @@
     <string name="onboarding_start">Start</string>
     <string name="onboarding_required_missing">Please grant the required permissions above.</string>
 
+
+    <!-- Overlay customization -->
+    <string name="config_v_pos">Vertical position</string>
+    <string name="desc_v_pos">Show the meter at the top or bottom edge of the screen</string>
+    <string name="v_pos_top">Top</string>
+    <string name="v_pos_bottom">Bottom</string>
+    <string name="config_opacity">Opacity</string>
+    <string name="desc_opacity">Overall opacity of the overlay. Android 12+ caps the maximum for touch safety.</string>
+    <string name="config_bg_color">Background color</string>
+    <string name="desc_bg_color">Backdrop color behind the meter</string>
+    <string name="bg_color_default">Default</string>
+    <string name="bg_color_dark">Dark</string>
+    <string name="bg_color_transparent">None</string>
+    <string name="bg_color_navy">Navy</string>
+    <string name="config_display_style">Display style</string>
+    <string name="desc_display_style">Choose which elements to draw on the meter</string>
+    <string name="style_bar_and_text">Text + bar</string>
+    <string name="style_text_only">Text only</string>
+    <string name="style_bar_only">Bar only</string>
+
 </resources>

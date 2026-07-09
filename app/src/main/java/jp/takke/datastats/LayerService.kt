@@ -106,6 +106,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   private var mCachedFontScale = 0f
   private var mCachedScreenWidth = -1
   private var mCachedXPos = -1
+  private var mCachedAtBottom = false
   private var mCachedInFullScreen = false
 
   // 実ディスプレイ高さのキャッシュ(回転時に onConfigurationChanged で無効化)
@@ -188,6 +189,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       // 補間モード等の Config 反映(Interpolate ON/OFF を即時反映するため)
       val mySurfaceView = mView?.findViewById<MySurfaceView>(R.id.mySurfaceView)
       mySurfaceView?.applyInterpolationConfig()
+
+      // 縦位置・不透明度の設定変更をウィンドウへ反映
+      applyOverlayLayoutConfig()
 
       showTrafficWithForceRedraw()
     }
@@ -404,6 +408,9 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mUserWantsVisible = PreferenceManager.getDefaultSharedPreferences(this)
       .getBoolean(C.PREF_KEY_USER_WANTS_VISIBLE, true)
 
+    // ウィンドウの gravity / alpha が Config に依存するため、params 生成前にロードする
+    Config.loadPreferences(this)
+
     // Viewからインフレータを作成する
     val layoutInflater = LayoutInflater.from(this)
 
@@ -420,13 +427,8 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
               or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR,
       PixelFormat.TRANSLUCENT
     )
-    // Android 12+ 対応のため透明度を設定する
-    // ※Android 12 からは透明度を 80% にしないと動作しなくなってしまう
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      params.alpha =
-        (getSystemService(Context.INPUT_SERVICE) as InputManager).maximumObscuringOpacityForTouch
-    }
-    params.gravity = Gravity.TOP or Gravity.LEFT
+    params.alpha = computeOverlayAlpha()
+    params.gravity = overlayGravity()
     mOverlayLayoutParams = params
 
     // WindowManagerを取得する
@@ -482,8 +484,48 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     // attach されるまでサイズ不明
     mView?.visibility = View.GONE
     mView?.addOnAttachStateChangeListener(this)
+  }
 
-    Config.loadPreferences(this)
+  /**
+   * オーバーレイの alpha を設定値から計算する。
+   * Android 12+ はタッチ保護のため maximumObscuringOpacityForTouch を超えられない。
+   */
+  private fun computeOverlayAlpha(): Float {
+    var alpha = Config.overlayOpacity.coerceIn(C.MIN_OVERLAY_OPACITY, 100) / 100f
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      val maxAlpha =
+        (getSystemService(Context.INPUT_SERVICE) as InputManager).maximumObscuringOpacityForTouch
+      if (alpha > maxAlpha) {
+        alpha = maxAlpha
+      }
+    }
+    return alpha
+  }
+
+  /** オーバーレイの gravity(縦位置設定に応じて上端/下端) */
+  @SuppressLint("RtlHardcoded")
+  private fun overlayGravity(): Int {
+    return (if (Config.overlayAtBottom) Gravity.BOTTOM else Gravity.TOP) or Gravity.LEFT
+  }
+
+  /** 縦位置・不透明度の設定変更をウィンドウへ再適用する(restart 時に呼ぶ) */
+  private fun applyOverlayLayoutConfig() {
+    val view = mView ?: return
+    val params = mOverlayLayoutParams ?: return
+    val newGravity = overlayGravity()
+    val newAlpha = computeOverlayAlpha()
+    if (params.gravity == newGravity && params.alpha == newAlpha) {
+      return
+    }
+    params.gravity = newGravity
+    params.alpha = newAlpha
+    try {
+      mWindowManager?.updateViewLayout(view, params)
+    } catch (e: Exception) {
+      MyLog.e(e)
+    }
+    // 縦位置変更で padding(statusBar/navBar)も変わるためレイアウトを再計算させる
+    mLayoutCached = false
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -693,6 +735,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     val textSizeSp = Config.textSizeSp
     val screenWidth = view.width
     val xPos = Config.xPos
+    val atBottom = Config.overlayAtBottom
 
     // 依存する値がすべて前回と同じなら再計算・レイアウト適用をスキップする
     // (毎秒 showTraffic() から呼ばれるため、setLayoutParams / setPadding の
@@ -705,6 +748,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       fontScale == mCachedFontScale &&
       screenWidth == mCachedScreenWidth &&
       xPos == mCachedXPos &&
+      atBottom == mCachedAtBottom &&
       inFullScreen == mCachedInFullScreen
     ) {
       return
@@ -714,6 +758,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mCachedFontScale = fontScale
     mCachedScreenWidth = screenWidth
     mCachedXPos = xPos
+    mCachedAtBottom = atBottom
     mCachedInFullScreen = inFullScreen
     mLayoutCached = true
 
@@ -733,24 +778,28 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mySurfaceView.layoutParams = params
 
     //--------------------------------------------------
-    // set padding (x pos)
+    // set padding (x pos / y pos)
     //--------------------------------------------------
-    val statusBarHeight = if (inFullScreen) 0 else getStatusBarHeight()
+    // 上端表示: ステータスバー分を避ける / 下端表示: ナビゲーションバー分を避ける
+    val topPadding =
+      if (!atBottom && !inFullScreen) getSystemBarHeight(WindowInsetsCompat.Type.statusBars()) else 0
+    val bottomPadding =
+      if (atBottom && !inFullScreen) getSystemBarHeight(WindowInsetsCompat.Type.navigationBars()) else 0
     val right = (screenWidth - widgetWidth) * (100 - xPos) / 100
-    view.setPadding(0, statusBarHeight, right, 0)
+    view.setPadding(0, topPadding, right, bottomPadding)
   }
 
   /**
-   * 端末のステータスバー高さを WindowInsets から取得する。
+   * 指定した system bar(statusBars / navigationBars)の高さを WindowInsets から取得する。
    * (旧実装の内部リソース `status_bar_height` の `getIdentifier` 参照は非公開 API のため廃止)
-   * `getInsetsIgnoringVisibility` を使うことで、一時的にステータスバーが隠れていても安定値を返す。
+   * `getInsetsIgnoringVisibility` を使うことで、一時的にバーが隠れていても安定値を返す。
    */
-  private fun getStatusBarHeight(): Int {
+  private fun getSystemBarHeight(insetsType: Int): Int {
     val view = mView ?: return 0
     val rootInsets = view.rootWindowInsets ?: return 0
-    return WindowInsetsCompat.toWindowInsetsCompat(rootInsets, view)
-      .getInsetsIgnoringVisibility(WindowInsetsCompat.Type.statusBars())
-      .top
+    val insets = WindowInsetsCompat.toWindowInsetsCompat(rootInsets, view)
+      .getInsetsIgnoringVisibility(insetsType)
+    return if (insetsType == WindowInsetsCompat.Type.navigationBars()) insets.bottom else insets.top
   }
 
   /**

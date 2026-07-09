@@ -77,4 +77,24 @@
     <string name="onboarding_start">Comenzar</string>
     <string name="onboarding_required_missing">Concede los permisos requeridos indicados arriba.</string>
 
+
+    <!-- Personalización de la superposición -->
+    <string name="config_v_pos">Posición vertical</string>
+    <string name="desc_v_pos">Muestra el medidor en el borde superior o inferior de la pantalla</string>
+    <string name="v_pos_top">Superior</string>
+    <string name="v_pos_bottom">Inferior</string>
+    <string name="config_opacity">Opacidad</string>
+    <string name="desc_opacity">Opacidad general de la superposición. Android 12+ limita el máximo por seguridad táctil.</string>
+    <string name="config_bg_color">Color de fondo</string>
+    <string name="desc_bg_color">Color de fondo detrás del medidor</string>
+    <string name="bg_color_default">Predeterminado</string>
+    <string name="bg_color_dark">Oscuro</string>
+    <string name="bg_color_transparent">Ninguno</string>
+    <string name="bg_color_navy">Azul marino</string>
+    <string name="config_display_style">Estilo de visualización</string>
+    <string name="desc_display_style">Elige qué elementos dibujar en el medidor</string>
+    <string name="style_bar_and_text">Texto + barra</string>
+    <string name="style_text_only">Solo texto</string>
+    <string name="style_bar_only">Solo barra</string>
+
 </resources>

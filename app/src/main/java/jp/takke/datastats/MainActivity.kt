@@ -301,6 +301,10 @@ class MainActivity : ComponentActivity() {
       barMaxKB = Config.barMaxKB,
       unitTypeBps = Config.unitTypeBps,
       autoUnitScale = Config.autoUnitScale,
+      overlayAtBottom = Config.overlayAtBottom,
+      overlayOpacity = Config.overlayOpacity,
+      overlayBgColor = Config.overlayBgColor,
+      displayStyle = Config.displayStyle,
       debugMode = TkConfig.debugMode,
       previewLabel = "-",
       previewSlider = 0,
@@ -359,6 +363,31 @@ class MainActivity : ComponentActivity() {
       if (pos == mUiState.xPos) return@MainScreenCallbacks
       savePref { putInt(C.PREF_KEY_X_POS, pos) }
       mUiState = mUiState.copy(xPos = pos)
+      doRestartService()
+    },
+    onOverlayAtBottomChange = { atBottom ->
+      if (atBottom == mUiState.overlayAtBottom) return@MainScreenCallbacks
+      savePref { putBoolean(C.PREF_KEY_OVERLAY_AT_BOTTOM, atBottom) }
+      mUiState = mUiState.copy(overlayAtBottom = atBottom)
+      // restart 内の applyOverlayLayoutConfig で gravity が再適用される
+      doRestartService()
+    },
+    onOverlayOpacityChange = { opacity ->
+      if (opacity == mUiState.overlayOpacity) return@MainScreenCallbacks
+      savePref { putInt(C.PREF_KEY_OVERLAY_OPACITY, opacity) }
+      mUiState = mUiState.copy(overlayOpacity = opacity)
+      doRestartService()
+    },
+    onOverlayBgColorChange = { color ->
+      if (color == mUiState.overlayBgColor) return@MainScreenCallbacks
+      savePref { putInt(C.PREF_KEY_OVERLAY_BG_COLOR, color) }
+      mUiState = mUiState.copy(overlayBgColor = color)
+      doRestartService()
+    },
+    onDisplayStyleChange = { style ->
+      if (style == mUiState.displayStyle) return@MainScreenCallbacks
+      savePref { putInt(C.PREF_KEY_DISPLAY_STYLE, style) }
+      mUiState = mUiState.copy(displayStyle = style)
       doRestartService()
     },
     onIntervalChange = { interval ->
