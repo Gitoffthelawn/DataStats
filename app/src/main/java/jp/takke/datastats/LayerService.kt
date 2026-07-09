@@ -107,6 +107,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
   private var mCachedScreenWidth = -1
   private var mCachedXPos = -1
   private var mCachedAtBottom = false
+  private var mCachedTopPadding = -1
   private var mCachedInFullScreen = false
 
   // 実ディスプレイ高さのキャッシュ(回転時に onConfigurationChanged で無効化)
@@ -737,6 +738,15 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     val xPos = Config.xPos
     val atBottom = Config.overlayAtBottom
 
+    // 上端表示はステータスバー分の padding を確保する
+    // (FLAG_LAYOUT_IN_SCREEN によりウィンドウがステータスバーへ重なって配置されるため)。
+    // 下端表示は FLAG_LAYOUT_INSET_DECOR によりウィンドウ自体がナビゲーションバーの
+    // 上に配置されるため、追加の padding は不要(付けると二重にオフセットされる)。
+    // ※padding もキャッシュキーに含める。insets の反映が window 移動より遅れて
+    //  一時的に 0 を返しても、値が確定した次回の tick で再適用され自己修復する。
+    val topPadding =
+      if (!atBottom && !inFullScreen) getStatusBarHeight() else 0
+
     // 依存する値がすべて前回と同じなら再計算・レイアウト適用をスキップする
     // (毎秒 showTraffic() から呼ばれるため、setLayoutParams / setPadding の
     //  再実行を避けるためのキャッシュ)
@@ -749,6 +759,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
       screenWidth == mCachedScreenWidth &&
       xPos == mCachedXPos &&
       atBottom == mCachedAtBottom &&
+      topPadding == mCachedTopPadding &&
       inFullScreen == mCachedInFullScreen
     ) {
       return
@@ -759,6 +770,7 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     mCachedScreenWidth = screenWidth
     mCachedXPos = xPos
     mCachedAtBottom = atBottom
+    mCachedTopPadding = topPadding
     mCachedInFullScreen = inFullScreen
     mLayoutCached = true
 
@@ -780,26 +792,33 @@ class LayerService : Service(), View.OnAttachStateChangeListener {
     //--------------------------------------------------
     // set padding (x pos / y pos)
     //--------------------------------------------------
-    // 上端表示: ステータスバー分を避ける / 下端表示: ナビゲーションバー分を避ける
-    val topPadding =
-      if (!atBottom && !inFullScreen) getSystemBarHeight(WindowInsetsCompat.Type.statusBars()) else 0
-    val bottomPadding =
-      if (atBottom && !inFullScreen) getSystemBarHeight(WindowInsetsCompat.Type.navigationBars()) else 0
     val right = (screenWidth - widgetWidth) * (100 - xPos) / 100
-    view.setPadding(0, topPadding, right, bottomPadding)
+    view.setPadding(0, topPadding, right, 0)
   }
 
   /**
-   * 指定した system bar(statusBars / navigationBars)の高さを WindowInsets から取得する。
+   * ステータスバーの高さを WindowInsets から取得する。
    * (旧実装の内部リソース `status_bar_height` の `getIdentifier` 参照は非公開 API のため廃止)
    * `getInsetsIgnoringVisibility` を使うことで、一時的にバーが隠れていても安定値を返す。
    */
-  private fun getSystemBarHeight(insetsType: Int): Int {
+  private fun getStatusBarHeight(): Int {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      // ビューの rootWindowInsets は「自ウィンドウのフレーム」に依存するため、
+      // 下端表示中(ステータスバーに重ならない)はステータスバー高さが 0 になってしまう。
+      // ウィンドウ位置に依存しないディスプレイレベルの insets を使う。
+      val wm = mWindowManager ?: return 0
+      return wm.currentWindowMetrics.windowInsets
+        .getInsetsIgnoringVisibility(WindowInsets.Type.statusBars())
+        .top
+    }
+
+    // API 23〜29: view の insets から取得(ウィンドウ移動直後は古い値になり得るが、
+    // updateWidgetSize が padding をキャッシュキーに含めるため次回の tick で自己修復する)
     val view = mView ?: return 0
     val rootInsets = view.rootWindowInsets ?: return 0
-    val insets = WindowInsetsCompat.toWindowInsetsCompat(rootInsets, view)
-      .getInsetsIgnoringVisibility(insetsType)
-    return if (insetsType == WindowInsetsCompat.Type.navigationBars()) insets.bottom else insets.top
+    return WindowInsetsCompat.toWindowInsetsCompat(rootInsets, view)
+      .getInsetsIgnoringVisibility(WindowInsetsCompat.Type.statusBars())
+      .top
   }
 
   /**
