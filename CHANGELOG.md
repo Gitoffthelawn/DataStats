@@ -4,6 +4,7 @@ Change Log
 v4.0.1 (2026.08.03)
 -------------------
 
+- Support Android 16 (targetSdkVersion 35 -> 36)
 - Update library
     - AGP 9.2.1 -> 9.3.1
 
